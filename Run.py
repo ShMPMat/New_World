@@ -11,15 +11,17 @@ import Spell
 
 
 class GameProcess():
-    def __init__(self, npc, character, phisic_wallmap):
+    def __init__(self, npc, character, phisic_wallmap, interface):
         self.turn = -1                      # Очередь хода (-1 - это наш персонаж)
         self.character = character          # Ссылка на игрового персонажа
         self.all_npc = npc                  # Ссылка на всех NPC
         self.all_persons = [character]      # Все персонажи
         self.all_persons.extend(npc)
         self.phisic_wallmap = phisic_wallmap
+        self.interface = interface
 
     def update(self, dt):
+        self.interface.update()
         if self.character.stepwise_mod:
             if self.turn == -1:
                 self.character.update(dt, self.all_persons)
@@ -111,6 +113,14 @@ class Interface():
         else:
             self.stepwise_buttons.append(Buttons.Button_Flag(Render_functions.load_text(self.character.spells.name), character.set_wearpon, (x, y), arg=(self.character.spells, None)))
 
+    def update(self):
+        self.map_pass = []
+        for line in self.map_f:
+            self.map_pass.append(line.copy())
+        for n in self.npc_list:
+            if not n.dead:
+                self.map_pass[n.cor[1]][n.cor[0]] = 0
+
     def events(self, e):
         if self.buttons:
             for but in self.buttons:
@@ -143,7 +153,7 @@ class Interface():
 
     def buttons_up(self, but, lst):
         """
-                Получает кнопку, на которую нажали и список с кнопками "отжимает" остальные кнопки
+                Получает кнопку, на которую нажали и список с кнопками. "Отжимает" остальные кнопки
         """
         for button in lst:
             if button != but and type(but) == Buttons.Button_Flag:
@@ -171,6 +181,8 @@ class Interface():
             if type(w) == Spell.Spell:
                 if w.type == "Attacking":
                     screen.blit(Render_functions.load_image('Fireball.png', alpha_cannel="True"), (x, y))
+                elif w.type == "Defence":
+                    screen.blit(Render_functions.load_image('Shield.png', alpha_cannel="True"), (x, y))
         else:
             screen.blit(Render_functions.load_image('Fist.png', alpha_cannel="True"), (x, y))
         if self.character.stepwise_mod:
@@ -182,10 +194,10 @@ class Interface():
                     screen.blit(self.pathmarker, (coof[0]+tile[0]*100, coof[1]+tile[1]*100))
             for npc in self.npc_list:
                 if npc.aggression:
-                    cor = npc.get_coords_on_map()
+                    cor = npc.get_coords_on_map()[0] + render_coof[0], npc.get_coords_on_map()[1] + render_coof[1]
                     screen.blit(Render_functions.load_text(str(npc.healf), color=(200, 0, 0)), (cor[0]+5, cor[1]+5))
                     screen.blit(Render_functions.load_text(str(npc.manna), color=(0, 0, 150)), (cor[0]+5, cor[1]+19))
-                    screen.blit(Render_functions.load_text(str(npc.manna), color=(100, 100, 100)), (cor[0]+5, cor[1]+33))
+                    screen.blit(Render_functions.load_text(str(npc.armor), color=(100, 100, 100)), (cor[0]+5, cor[1]+33))
             if self.character.dead:
                 screen.blit(Render_functions.load_text("Вы мертвы", pt=200, color=(220, 0, 0)), (80, RES_Y/2-100))
 
@@ -227,7 +239,7 @@ TILE_SIZE = 100                                     # Размер тайла (�
 
 
 # Main Actions
-file = open('d', 'rb')                              # Открыть файл с картами
+file = open('c', 'rb')                              # Открыть файл с картами
 maps = pickle.load(file)                            # Загрузить карты
 map_f, map_w, map_d = maps                          # Загрузить карты в собственные переменные
 file.close()                                        # Закрыть файл с картами
@@ -245,9 +257,9 @@ ch = False
 
 npc_list = [NPC("Test_Enemy", (1, 4), gear=(None, None)), NPC("Test_Enemy_2", (4, 2), gear=(None, None))]
 npc_list[0].attack_distance = 2
-character = Character("Test Character", (3, 0), skills=(1, 3, 1), spelllist=(Spell.fireball, Spell.improve_aah))
-game_process = GameProcess(npc_list, character, phisic_wallmap)
+character = Character("Test Character", (0, 0), skills=(1, 3, 1), spelllist=(Spell.fireball, Spell.improve_aah))
 interface = Interface(character, npc_list, (RES_X, RES_Y), map_f, map_w)
+game_process = GameProcess(npc_list, character, phisic_wallmap, interface)
 interface.buttons.append(Buttons.Button("Пошагово/Реальное время", (0, RES_Y-20), game_process.change_mod))
 interface.stepwise_buttons.append(Buttons.Button("Конец хода", (300, RES_Y-20), game_process.new_step))
 

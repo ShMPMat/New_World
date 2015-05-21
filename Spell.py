@@ -32,4 +32,4 @@ class Spell():
 
 
 fireball = Spell("Огненный шар", "Attacking", 1, 4, 4, effect=(3, "Flying_fireball.png"))
-improve_aah = Spell("Божественная помощь!", "Defence", 1, 4, 4, effect=(10, 30))
+improve_aah = Spell("Божественная помощь!", "Defence", 1, 4, 4, effect=(1, 30))

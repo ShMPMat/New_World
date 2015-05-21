@@ -72,10 +72,12 @@ class Men():
         if self.path:
             for per in all_persons:
                 if not per.dead:
-                    if self.path[0] == per.cor and self != per:
+                    if self.path == per.cor and self != per:
                         self.stop()
-                    elif self.path == per.cor and self != per:
+                        break
+                    elif self.path[0] == per.cor and self != per:
                         self.stop()
+                        break
         if self.path:
             if self.path[0] != self.cor:
                 if self.stepwise_mod and self.action_points - self.coofs['stepwise_move'] < 0:
@@ -157,6 +159,8 @@ class Men():
         """
         if not self.attack_field.collidepoint(self.target.cor[0], self.target.cor[1]):
             return
+        # if self.target != self:
+        #     if self.check_for_visibility()
         if not self.look_direction(self.target.cor):
             return
         if self.anim_play == "b_punch":
@@ -213,20 +217,49 @@ class Men():
         self.armor = 0
 
     def check_for_visibility(self, phisic_wallmap, v_segment):
-        print(v_segment)
+        return True
+        print("11111",v_segment)
         try:
             k1 = (v_segment[0][1]-v_segment[1][1])/(v_segment[0][0]-v_segment[1][0])
+            b1 = v_segment[0][1]-k1*v_segment[0][0]
         except:
             k1 = 0
-        b1 = v_segment[0][1]-k1*v_segment[0][0]
+            b1 = v_segment[0][1]-0*v_segment[0][0]
+            # for segment in phisic_wallmap:
+            #     try:
+            #         k2 = (segment[0][1]-segment[1][1])/(segment[0][0]-segment[1][0])
+            #         b2 = segment[0][1]-k2*segment[0][0]
+            #     except:
+            #         k2 = 99*99
+            #         b2 = segment[0][1]-0*segment[0][0]
+            #     if k2 != k1:
+            #         if k2 == 99*99:
+            #             k2 = 0
+            #         if k1 == 99*99:
+            #             k1 = 0
+            #         try:
+            #             x = (b2-b1)/(k1-k2)
+            #         except:
+            #             x = 0
+            #         y = k2*x+b2
+            #         if y == k1*x+b1:
+            #             print("666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666")
+            #             if (segment[0][1] > v_segment[0][1] and segment[0][1] < v_segment[1][1]) or (segment[0][1] < v_segment[0][1] and segment[0][1] > v_segment[1][1]):
+            #                 return False
         for segment in phisic_wallmap:
             print(segment)
             try:
                 k2 = (segment[0][1]-segment[1][1])/(segment[0][0]-segment[1][0])
+                b2 = segment[0][1]-k2*segment[0][0]
             except:
                 k2 = 0
+                b2 = segment[0][1]-0*segment[0][0]
+            print(k1,k2)
             if k2 != k1:
-                b2 = segment[0][1]-k2*segment[0][0]
+                if k2 == 99*99:
+                    k2 = 0
+                if k1 == 99*99:
+                    k1 = 0
                 try:
                     x = (b2-b1)/(k1-k2)
                 except:
@@ -234,9 +267,10 @@ class Men():
                 y = k2*x+b2
                 print(x, y)
                 if y == k1*x+b1:
-                    if not (((x <= v_segment[0][0] and x >= v_segment[1][0]) or (x >= v_segment[0][0] and x <= v_segment[1][0])) and ((y <= v_segment[0][1] and y >= v_segment[1][1]) or (y >= v_segment[0][1] and y <= v_segment[1][1]))):
+                    if (((x <= v_segment[0][0] and x >= v_segment[1][0]) or (x >= v_segment[0][0] and x <= v_segment[1][0])) and ((y <= v_segment[0][1] and y >= v_segment[1][1]) or (y >= v_segment[0][1] and y <= v_segment[1][1]))):
                         print("000000000000000000000000000000000000")
-                        return True
+                        return False
+        return True
 
     def attackfield_update(self):
         """
