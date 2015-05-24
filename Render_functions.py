@@ -39,7 +39,7 @@ def tiled_background(img, res_x, res_y):
             x = 0
             y += size
 
-def scene_render(map_f, map_w, objects, sur, size):
+def scene_render(map_f, map_w, objects, sur):
     y = 0
     for line in map_f:
         x = 0
@@ -75,7 +75,7 @@ def scene_render(map_f, map_w, objects, sur, size):
                 z += 1
             x += 1
         y += 1
-    sur = pygame.transform.scale(sur, (size*len(map_f[0]), size*len(map_f)))
+    sur = pygame.transform.scale(sur, (100*len(map_f[0]), 100*len(map_f)))
     return sur
 
 def massdata_render(screen, mod, char):

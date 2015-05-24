@@ -1,7 +1,8 @@
 import pygame
-from findPathLee import findPath
 import Tile
 from Character import Character
+from Camera import Camera
+from Interface import Interface
 from NPC import NPC
 import Extra_functions
 import Render_functions
@@ -11,14 +12,23 @@ import Spell
 
 
 class GameProcess():
-    def __init__(self, npc, character, phisic_wallmap, interface):
+    def __init__(self, npc, character, phisic_wallmap):
         self.turn = -1                      # Очередь хода (-1 - это наш персонаж)
         self.character = character          # Ссылка на игрового персонажа
         self.all_npc = npc                  # Ссылка на всех NPC
         self.all_persons = [character]      # Все персонажи
         self.all_persons.extend(npc)
         self.phisic_wallmap = phisic_wallmap
-        self.interface = interface
+        self.camera = Camera([0,0])
+        self.interface = Interface(character, self.all_npc, (RES_X, RES_Y), map_f, map_w, self.camera)
+        self.interface.buttons.append(Buttons.Button("Пошагово/Реальное время", (0, RES_Y-20), self.change_mod))
+        self.interface.buttons.append(Buttons.Button_Img(("Persona_icon.png","Persona_icon_2.png"), (RES_X-135, 7), self.interface.window_manager, arg=1))
+        self.interface.stepwise_buttons.append(Buttons.Button("Конец хода", (300, RES_Y-20), self.new_step))
+        self.world_img = pygame.Surface((RES_X, RES_Y))          # Поверхность, на которой отображается весь игровой мир
+
+    def events(self, e):
+        self.interface.events(e)
+        self.camera.events(e)
 
     def update(self, dt):
         self.interface.update()
@@ -82,124 +92,14 @@ class GameProcess():
             self.all_npc.action_points = 15
             self.all_npc.finish = False
 
-
-class Interface():
-    def __init__(self, char, npc, res, map_floor, map_wall):
-        self.character = char
-        self.npc_list = npc
-        self.all_persons = [character]      # Все персонажи
-        self.all_persons.extend(npc)
-        self.map_f = map_floor
-        self.map_w = map_wall
-        self.map_pass = []
-        for line in self.map_f:
-            self.map_pass.append(line.copy())
-        for n in self.npc_list:
-            self.map_pass[n.cor[1]][n.cor[0]] = 0
-        self.z_ind = False
-        self.resolution = res
-        self.path = None
-        self.pathmarker = Render_functions.load_image('Pathmarker.png', alpha_cannel="True")  # Картинка выбраного пути
-        self.ap = Render_functions.load_image('ActP_active.png', alpha_cannel="True")
-        self.wasted_ap = Render_functions.load_image('ActP_wasted.png', alpha_cannel="True")
-        self.buttons = []
-        self.stepwise_buttons = []
-        x = RES_X-170
-        y = 100
-        if type(self.character.spells) == tuple:
-            for spell in self.character.spells:
-                self.stepwise_buttons.append(Buttons.Button_Flag(Render_functions.load_text(spell.name), self.character.set_wearpon, (x, y), arg=(spell, None)))
-                y += 15
-        else:
-            self.stepwise_buttons.append(Buttons.Button_Flag(Render_functions.load_text(self.character.spells.name), character.set_wearpon, (x, y), arg=(self.character.spells, None)))
-
-    def update(self):
-        self.map_pass = []
-        for line in self.map_f:
-            self.map_pass.append(line.copy())
-        for n in self.npc_list:
-            if not n.dead:
-                self.map_pass[n.cor[1]][n.cor[0]] = 0
-
-    def events(self, e):
-        if self.buttons:
-            for but in self.buttons:
-                if but.events(e):
-                    self.z_ind = True
-                else:
-                    self.z_ind = False
-        if self.character.stepwise_mod:
-            for but in self.stepwise_buttons:
-                if but.events(e):
-                    self.z_ind = True
-                    self.buttons_up(but, self.stepwise_buttons)
-                elif self.z_ind != True:
-                    self.z_ind = False
-            if e.type == pygame.MOUSEMOTION:
-                self.path = findPath(self.map_pass, self.map_w, self.character.cor, (Extra_functions.get_click_tile(e.pos, render_coof, self.map_pass)))
-                if self.path == -1:
-                    self.path = None
-        if e.type == pygame.MOUSEBUTTONUP:
-            if e.button == 1 and not self.z_ind:
-                chosen_tile = Extra_functions.get_click_tile(e.pos, render_coof, self.map_f)
-                t = True
-                for per in self.all_persons:
-                    if chosen_tile == per.cor:
-                        self.character.set_target(per)
-                        t = False
-                        break
-                if t:
-                    self.character.set_path(findPath(self.map_pass, self.map_w, self.character.cor, chosen_tile))
-
-    def buttons_up(self, but, lst):
-        """
-                Получает кнопку, на которую нажали и список с кнопками. "Отжимает" остальные кнопки
-        """
-        for button in lst:
-            if button != but and type(but) == Buttons.Button_Flag:
-                button.stat = False
-
-    def render(self, screen, coof):
-        screen.blit(Render_functions.load_text("Здоровье "+str(self.character.healf)+"|"+str(self.character.max_healf)), (RES_X-110, 5))
-        screen.blit(Render_functions.load_text("Манна "+str(self.character.manna)+"|"+str(self.character.max_manna)), (RES_X-110, 25))
-        screen.blit(Render_functions.load_text("Броня "+str(self.character.armor)), (RES_X-110, 45))
-        if self.buttons:
-            for but in self.buttons:
-                    but.render(screen)
-        x = self.resolution[0] - 330
-        y = self.resolution[1] - 25
-        for i in range(15):
-            if i < self.character.action_points:
-                screen.blit(self.ap, (x, y))
-            else:
-                screen.blit(self.wasted_ap, (x, y))
-            x += 22
-        x = self.resolution[0] - 375
-        y = self.resolution[1] - 45
-        w = self.character.gear["Wearpon"]
-        if w:
-            if type(w) == Spell.Spell:
-                if w.type == "Attacking":
-                    screen.blit(Render_functions.load_image('Fireball.png', alpha_cannel="True"), (x, y))
-                elif w.type == "Defence":
-                    screen.blit(Render_functions.load_image('Shield.png', alpha_cannel="True"), (x, y))
-        else:
-            screen.blit(Render_functions.load_image('Fist.png', alpha_cannel="True"), (x, y))
-        if self.character.stepwise_mod:
-            if self.stepwise_buttons:
-                for but in self.stepwise_buttons:
-                    but.render(screen)
-            if self.path:
-                for tile in self.path:
-                    screen.blit(self.pathmarker, (coof[0]+tile[0]*100, coof[1]+tile[1]*100))
-            for npc in self.npc_list:
-                if npc.aggression:
-                    cor = npc.get_coords_on_map()[0] + render_coof[0], npc.get_coords_on_map()[1] + render_coof[1]
-                    screen.blit(Render_functions.load_text(str(npc.healf), color=(200, 0, 0)), (cor[0]+5, cor[1]+5))
-                    screen.blit(Render_functions.load_text(str(npc.manna), color=(0, 0, 150)), (cor[0]+5, cor[1]+19))
-                    screen.blit(Render_functions.load_text(str(npc.armor), color=(100, 100, 100)), (cor[0]+5, cor[1]+33))
-            if self.character.dead:
-                screen.blit(Render_functions.load_text("Вы мертвы", pt=200, color=(220, 0, 0)), (80, RES_Y/2-100))
+    def render(self, screen):
+        self.world_img.fill((0, 0, 0))
+        self.world_img = Render_functions.scene_render(map_f, map_w, objects, self.world_img)
+        for npc in npc_list:
+            npc.render(self.world_img)
+        character.render(self.world_img)
+        screen.blit(self.world_img, self.camera.cor)
+        self.interface.render(screen, self.camera.cor)
 
 
 def set_scene(scene_value):
@@ -235,11 +135,10 @@ def get_phisic_wallmap(map_wall):
 FPS = 60                                            # ФПС программы
 RES_X = 900                                         # Разрешение по длине
 RES_Y = 700                                         # Разрешение по ширине
-TILE_SIZE = 100                                     # Размер тайла (НЕ РАБОТАЕТ!!!!!)
 
 
 # Main Actions
-file = open('c', 'rb')                              # Открыть файл с картами
+file = open('d', 'rb')                              # Открыть файл с картами
 maps = pickle.load(file)                            # Загрузить карты
 map_f, map_w, map_d = maps                          # Загрузить карты в собственные переменные
 file.close()                                        # Закрыть файл с картами
@@ -250,18 +149,12 @@ screen = pygame.display.set_mode((RES_X, RES_Y))    # Создаем окно п
 clock = pygame.time.Clock()                         # Создаем таймер
 menu = ["game"]                                     # Меню, которое в данный момент на экране
 mainloop = True                                     # Двигатель главного цикла
-world_img = pygame.Surface((RES_X, RES_Y))          # Поверхность, на которой отображается весь игровой мир
-render_coof = [0, 0]
-ch = False
 
 
 npc_list = [NPC("Test_Enemy", (1, 4), gear=(None, None)), NPC("Test_Enemy_2", (4, 2), gear=(None, None))]
 npc_list[0].attack_distance = 2
 character = Character("Test Character", (0, 0), skills=(1, 3, 1), spelllist=(Spell.fireball, Spell.improve_aah))
-interface = Interface(character, npc_list, (RES_X, RES_Y), map_f, map_w)
-game_process = GameProcess(npc_list, character, phisic_wallmap, interface)
-interface.buttons.append(Buttons.Button("Пошагово/Реальное время", (0, RES_Y-20), game_process.change_mod))
-interface.stepwise_buttons.append(Buttons.Button("Конец хода", (300, RES_Y-20), game_process.new_step))
+game_process = GameProcess(npc_list, character, phisic_wallmap)
 
 objects = {     # Все доступные объекты
     "Floor": {
@@ -275,32 +168,14 @@ objects = {     # Все доступные объекты
 
 while mainloop:
     screen.fill((0, 0, 0))
-    world_img.fill((0, 0, 0))
     if menu[0] == "game":
         for e in pygame.event.get():
             if e.type == pygame.MOUSEMOTION or e.type == pygame.MOUSEBUTTONDOWN or e.type == pygame.MOUSEBUTTONUP:
-                interface.events(e)
-            if e.type == pygame.QUIT:
+                game_process.events(e)
+            elif e.type == pygame.QUIT:
                     mainloop = False
-            if e.type == pygame.MOUSEBUTTONDOWN:
-                if e.button == 1:
-                    pass
-                if e.button == 2:
-                    ch = True
-            if e.type == pygame.MOUSEBUTTONUP:
-                if e.button == 2:
-                    ch = False
-            if e.type == pygame.MOUSEMOTION:
-                if ch:
-                    render_coof[0] += e.rel[0]
-                    render_coof[1] += e.rel[1]
         game_process.update(clock.get_time())
-        world_img = Render_functions.scene_render(map_f, map_w, objects, world_img, TILE_SIZE)
-        for npc in npc_list:
-            npc.render(world_img)
-        character.render(world_img)
-        screen.blit(world_img, render_coof)
-        interface.render(screen, render_coof)
+        game_process.render(screen)
     pygame.display.set_caption("FPS: " + str(clock.get_fps()))
     clock.tick(FPS)         # Управление ФПС
     pygame.display.flip()   # Обновляем дисплей

@@ -216,60 +216,37 @@ class Men():
     def __update_armor(self):
         self.armor = 0
 
-    def check_for_visibility(self, phisic_wallmap, v_segment):
+    def check_for_visibility(self, lst, cort):
         return True
-        print("11111",v_segment)
-        try:
-            k1 = (v_segment[0][1]-v_segment[1][1])/(v_segment[0][0]-v_segment[1][0])
-            b1 = v_segment[0][1]-k1*v_segment[0][0]
-        except:
-            k1 = 0
-            b1 = v_segment[0][1]-0*v_segment[0][0]
-            # for segment in phisic_wallmap:
-            #     try:
-            #         k2 = (segment[0][1]-segment[1][1])/(segment[0][0]-segment[1][0])
-            #         b2 = segment[0][1]-k2*segment[0][0]
-            #     except:
-            #         k2 = 99*99
-            #         b2 = segment[0][1]-0*segment[0][0]
-            #     if k2 != k1:
-            #         if k2 == 99*99:
-            #             k2 = 0
-            #         if k1 == 99*99:
-            #             k1 = 0
-            #         try:
-            #             x = (b2-b1)/(k1-k2)
-            #         except:
-            #             x = 0
-            #         y = k2*x+b2
-            #         if y == k1*x+b1:
-            #             print("666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666")
-            #             if (segment[0][1] > v_segment[0][1] and segment[0][1] < v_segment[1][1]) or (segment[0][1] < v_segment[0][1] and segment[0][1] > v_segment[1][1]):
-            #                 return False
-        for segment in phisic_wallmap:
-            print(segment)
-            try:
-                k2 = (segment[0][1]-segment[1][1])/(segment[0][0]-segment[1][0])
-                b2 = segment[0][1]-k2*segment[0][0]
-            except:
-                k2 = 0
-                b2 = segment[0][1]-0*segment[0][0]
-            print(k1,k2)
-            if k2 != k1:
-                if k2 == 99*99:
-                    k2 = 0
-                if k1 == 99*99:
-                    k1 = 0
-                try:
-                    x = (b2-b1)/(k1-k2)
-                except:
-                    x = 0
-                y = k2*x+b2
-                print(x, y)
-                if y == k1*x+b1:
-                    if (((x <= v_segment[0][0] and x >= v_segment[1][0]) or (x >= v_segment[0][0] and x <= v_segment[1][0])) and ((y <= v_segment[0][1] and y >= v_segment[1][1]) or (y >= v_segment[0][1] and y <= v_segment[1][1]))):
-                        print("000000000000000000000000000000000000")
-                        return False
+        lst2 = []
+        for i in lst:
+            if not i[0][0] - i[1][0]:
+                if cort[0][0] > i[0][0]:
+                    if cort[1][0]<i[0][0]:
+                        lst2.append(False)
+                    else:
+                        lst2.append(True)
+                else:
+                    if cort[1][0]>i[0][0]:
+                        lst2.append(False)
+                    else:
+                        lst2.append(True)
+            else:
+                k2 = (i[0][1]-i[1][1])/(i[0][0]-i[1][0])
+                b2 = i[0][1]-k2*i[0][0]
+                if cort[0][1]> b2:
+                    if cort[1][1]>b2:
+                        lst2.append(False)
+                    else:
+                        lst2.append(True)
+                else:
+                    if cort[1][1]<b2:
+                        lst2.append(False)
+                    else:
+                        lst2.append(True)
+        for i in lst2:
+            if i:
+                return False
         return True
 
     def attackfield_update(self):

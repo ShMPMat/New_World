@@ -94,7 +94,6 @@ class Button_Img():
     def __init__(self, imgs, cor, action, arg = False, sin= False, st=None): # Картинки кнопки, координаты, функция, звук при наведении, звук при переходе pygame.mixer.Sound('Sounds/2.ogg')
         self.imgs = []
         if type(imgs[1]) != pygame.Surface:
-            print("1")
             for img in imgs:
                 self.imgs.append(Render_functions.load_image(img, alpha_cannel="True"))
         else:
@@ -105,7 +104,6 @@ class Button_Img():
         self.arguments = arg
         self.s_in = sin
         self.s_tar = st
-        print(self.imgs)
         self.rect = self.imgs[0].get_rect()
         self.rect.move_ip(cor)
 
@@ -133,4 +131,4 @@ class Button_Img():
         elif self.mod == "in":
              screen.blit(self.imgs[1], self.cor)
         elif self.mod == "down":
-             screen.blit(self.imgs[2], self.cor)
+             screen.blit(self.imgs[1], self.cor)

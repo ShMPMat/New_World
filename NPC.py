@@ -49,7 +49,7 @@ class NPC(Men):
                             pass
         if self.aggression:
             if self.check_for_visibility(map_w_phisic, ((self.cor[0]+0.5,self.cor[1]+0.5),(char.cor[0]+0.5,char.cor[1]+0.5))):
-                print("3232377777777777777777777")
+                # print("3232377777777777777777777")
                 if self.vision_field.collidepoint(char.cor[0], char.cor[1]): #
                     self.alarm = True
                     if not self.path:
