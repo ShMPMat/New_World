@@ -7,7 +7,7 @@ import math
 
 
 class Men():
-    def __init__(self, name, cor, attack=1, skills=(1, 1, 1), spelllist = (), body=("Body_1.png", "Head_1.png"), gear=(None, None)):# "White_doc_robe.png"
+    def __init__(self, name, cor, attack=1, skills=(1, 1, 1), spelllist = (), body=("Body_1.png", "Head_1.png"), gear=(None, None)):
         # Основные параметры персонажа
         self.name = name                        # Имя
         self.cor = cor                          # Координаты
@@ -16,10 +16,13 @@ class Men():
             "head": Render_functions.load_image(body[1], alpha_cannel="True"),                  # Голова
             "body": Render_functions.load_image(body[0], alpha_cannel="True"),                  # Тело
         }
-        self.gear = {                           # Снаряжение
-            "Outerwear": Render_functions.load_image(gear[0], alpha_cannel="True"),    # Куртка\Костюм
-            "Wearpon":   Render_functions.load_image(gear[1], alpha_cannel="True")    # Оружие
+        self.gear = {"Outerwear" : None,                           # Снаряжение
+                     "Wearpon" : None
         }
+        if gear[0]:
+            self.gear["Outerwear"] = gear[0]    # Куртка\Костюм
+        if gear[1]:
+            self.gear["Wearpon"] =  gear[1]    # Оружие
         self.skills = {                         # Навыки
             "magic":    skills[0],                                                     # Магия
             "strength": skills[1],                                                     # Сила
@@ -290,7 +293,7 @@ class Men():
 
     def animations_update(self, body, gear):
         if gear[0]:
-            pass
+            foundation = gear[0].img_str[:-4]
         else:
             foundation = body[0][:-4]
         self.animations = {
@@ -347,7 +350,8 @@ class Men():
                 body = self.get_anim_frame()
         if not body:
             if self.gear["Outerwear"]:
-                body = self.gear["Outerwear"]
+                print(self.gear["Outerwear"])
+                body = self.gear["Outerwear"].img
             else:
                 body = self.body["body"]
         head = self.body["head"]

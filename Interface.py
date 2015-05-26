@@ -27,10 +27,9 @@ class Interface():
         self.wasted_ap = Render_functions.load_image('ActP_wasted.png', alpha_cannel="True")
         self.buttons = []
         self.stepwise_buttons = []
-        self.windows = [Window(pygame.Rect(0,0,300,res[1]-20),"Background.png", [(Render_functions.load_text("Сила -          "+str(self.character.skills["strength"])), (5, 5)),
-                                                                                  (Render_functions.load_text("Магия -        "+str(self.character.skills["magic"])), (5, 25)),
-                                                                                   (Render_functions.load_text("Стрельба -   "+str(self.character.skills["shooting"])), (5, 45))])
+        self.windows = [Window(pygame.Rect(0,0,res[0]/2,res[1]-20),"Background.png", [])
                         ]
+        self.update_persona_window()
         self.active_windows = []
         x = self.resolution[0]-170
         y = 100
@@ -42,12 +41,22 @@ class Interface():
             self.stepwise_buttons.append(Buttons.Button_Flag(Render_functions.load_text(self.character.spells.name), char.set_wearpon, (x, y), arg=(self.character.spells, None)))
 
     def update(self):
+        self.update_persona_window()
         self.map_pass = []
         for line in self.map_f:
             self.map_pass.append(line.copy())
         for n in self.npc_list:
             if not n.dead:
                 self.map_pass[n.cor[1]][n.cor[0]] = 0
+
+    def update_persona_window(self):
+        self.windows[0].elements = [(Render_functions.load_text("Сила -          "+str(self.character.skills["strength"])), (5, 5)),
+                                      (Render_functions.load_text("Магия -        "+str(self.character.skills["magic"])), (5, 25)),
+                                       (Render_functions.load_text("Стрельба -   "+str(self.character.skills["shooting"])), (5, 45)),
+                                       (Render_functions.load_text(str(self.character.name)), (65, self.resolution[1]-40)),
+                                       (Render_functions.load_image('Outerwear_s.png', alpha_cannel="True"), (330,200))]
+        if self.character.gear["Outerwear"]:
+            self.windows[0].elements.append((Render_functions.load_image(self.character.gear["Outerwear"].img_s, alpha_cannel="True"), (330,200)))
 
     def events(self, e):
         self.z_ind = False

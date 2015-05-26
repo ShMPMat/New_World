@@ -1,10 +1,10 @@
 import pygame
 import Tile
+import Thing
 from Character import Character
 from Camera import Camera
 from Interface import Interface
 from NPC import NPC
-import Extra_functions
 import Render_functions
 import pickle
 import Buttons
@@ -12,15 +12,15 @@ import Spell
 
 
 class GameProcess():
-    def __init__(self, npc, character, phisic_wallmap):
+    def __init__(self, phisic_wallmap):
         self.turn = -1                      # Очередь хода (-1 - это наш персонаж)
-        self.character = character          # Ссылка на игрового персонажа
-        self.all_npc = npc                  # Ссылка на всех NPC
-        self.all_persons = [character]      # Все персонажи
-        self.all_persons.extend(npc)
+        self.character = Character("Test Character", (0, 0), skills=(1, 3, 1), spelllist=(Spell.fireball, Spell.improve_aah), gear=(doctor_robe, None))          # Создание игрового персонажа
+        self.all_npc = [NPC("Test_Enemy", (1, 4), gear=(None, None)), NPC("Test_Enemy_2", (4, 2), gear=(None, None))]                  # Ссылка на всех NPC
+        self.all_persons = [self.character]      # Все персонажи
+        self.all_persons.extend(self.all_npc)
         self.phisic_wallmap = phisic_wallmap
         self.camera = Camera([0,0])
-        self.interface = Interface(character, self.all_npc, (RES_X, RES_Y), map_f, map_w, self.camera)
+        self.interface = Interface(self.character, self.all_npc, (RES_X, RES_Y), map_f, map_w, self.camera)
         self.interface.buttons.append(Buttons.Button("Пошагово/Реальное время", (0, RES_Y-20), self.change_mod))
         self.interface.buttons.append(Buttons.Button_Img(("Persona_icon.png","Persona_icon_2.png"), (RES_X-135, 7), self.interface.window_manager, arg=1))
         self.interface.stepwise_buttons.append(Buttons.Button("Конец хода", (300, RES_Y-20), self.new_step))
@@ -95,9 +95,9 @@ class GameProcess():
     def render(self, screen):
         self.world_img.fill((0, 0, 0))
         self.world_img = Render_functions.scene_render(map_f, map_w, objects, self.world_img)
-        for npc in npc_list:
+        for npc in self.all_npc:
             npc.render(self.world_img)
-        character.render(self.world_img)
+        self.character.render(self.world_img)
         screen.blit(self.world_img, self.camera.cor)
         self.interface.render(screen, self.camera.cor)
 
@@ -151,10 +151,9 @@ menu = ["game"]                                     # Меню, которое �
 mainloop = True                                     # Двигатель главного цикла
 
 
-npc_list = [NPC("Test_Enemy", (1, 4), gear=(None, None)), NPC("Test_Enemy_2", (4, 2), gear=(None, None))]
-npc_list[0].attack_distance = 2
-character = Character("Test Character", (0, 0), skills=(1, 3, 1), spelllist=(Spell.fireball, Spell.improve_aah))
-game_process = GameProcess(npc_list, character, phisic_wallmap)
+doctor_robe = Thing.Equipment("Врачебный халат","White_doc_robe.png",2,1000,"White_doc_robe.png", "White_doc_robe_s.png")
+
+game_process = GameProcess(phisic_wallmap)
 
 objects = {     # Все доступные объекты
     "Floor": {
