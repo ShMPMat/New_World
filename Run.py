@@ -13,11 +13,11 @@ import Spell
 
 class GameProcess():
     def __init__(self, phisic_wallmap):
-        self.turn = -1                      # Очередь хода (-1 - это наш персонаж)
-        self.character = Character("Test Character", (0, 0), skills=(1, 3, 1), spelllist=(Spell.fireball, Spell.improve_aah), gear=(doctor_robe, None))          # Создание игрового персонажа
-        self.all_npc = [NPC("Test_Enemy", (1, 4), gear=(None, None)), NPC("Test_Enemy_2", (4, 2), gear=(None, None))]                  # Ссылка на всех NPC
-        self.all_persons = [self.character]      # Все персонажи
-        self.all_persons.extend(self.all_npc)
+        self.turn = -1                      # Очередь хода в пошаговом режиме (-1 - это наш персонаж)
+        self.character = Character("Test Character", (0, 0), skills=(1, 3, 1), spelllist=(Spell.fireball, Spell.improve_aah), gear=(doctor_robe, None))     # Создание игрового персонажа
+        self.all_npc = [NPC("Test_Enemy", (1, 4), gear=(None, None)), NPC("Test_Enemy_2", (4, 2), gear=(None, None))]                                       # Ссылка на всех NPC
+        self.all_persons = [self.character]
+        self.all_persons.extend(self.all_npc)                                                                                                               # Все персонажи
         self.phisic_wallmap = phisic_wallmap
         self.camera = Camera([0,0])
         self.interface = Interface(self.character, self.all_npc, (RES_X, RES_Y), map_f, map_w, self.camera)
@@ -56,12 +56,8 @@ class GameProcess():
                 Включить пошаговый режим для всех
         """
         self.turn = -1
-        self.character.stepwise_mod = True
-        try:
-            for npc in self.all_npc:
-                npc.stepwise_mod = True
-        except:
-            self.all_npc.stepwise_mod = True
+        for men in self.all_persons:
+            men.stepwise_mod = True
 
     def change_mod(self):
         """
@@ -93,11 +89,9 @@ class GameProcess():
             self.all_npc.finish = False
 
     def render(self, screen):
-        self.world_img.fill((0, 0, 0))
         self.world_img = Render_functions.scene_render(map_f, map_w, objects, self.world_img)
-        for npc in self.all_npc:
-            npc.render(self.world_img)
-        self.character.render(self.world_img)
+        for men in self.all_persons:
+            men.render(self.world_img)
         screen.blit(self.world_img, self.camera.cor)
         self.interface.render(screen, self.camera.cor)
 
@@ -139,8 +133,7 @@ RES_Y = 700                                         # Разрешение по 
 
 # Main Actions
 file = open('d', 'rb')                              # Открыть файл с картами
-maps = pickle.load(file)                            # Загрузить карты
-map_f, map_w, map_d = maps                          # Загрузить карты в собственные переменные
+map_f, map_w, map_d = pickle.load(file)             # Загрузить карты в собственные переменные
 file.close()                                        # Закрыть файл с картами
 phisic_wallmap = get_phisic_wallmap(map_w)
 
@@ -151,14 +144,16 @@ menu = ["game"]                                     # Меню, которое �
 mainloop = True                                     # Двигатель главного цикла
 
 
-doctor_robe = Thing.Equipment("Врачебный халат","White_doc_robe.png",2,1000,"White_doc_robe.png", "White_doc_robe_s.png")
+doctor_robe = Thing.Equipment("Врачебный халат","White_doc_robe_icon.png", (2,2), 2,1000, 0, "White_doc_robe.png", "White_doc_robe_s.png")
+bulletproof_vest = Thing.Equipment("Бронежилет","Bulletproof_vest_icon.png", (2,2), 2,1000, 0, "Bulletproof_vest.png", "Bulletproof_vest_s.png")
 
 game_process = GameProcess(phisic_wallmap)
 
 objects = {     # Все доступные объекты
     "Floor": {
         1: Tile.Floor((0, 0), "B_Tile.png", 1),
-        2: Tile.Floor((0, 0), "Tile-2.png", 2)
+        2: Tile.Floor((0, 0), "Tile-2.png", 2),
+        3: Tile.Floor((0, 0), "Ground_1.png", 3)
     },
     "Wall": {
         1: Tile.Wall((0, 0), "Wall_1.png", 1)
@@ -171,7 +166,7 @@ while mainloop:
         for e in pygame.event.get():
             if e.type == pygame.MOUSEMOTION or e.type == pygame.MOUSEBUTTONDOWN or e.type == pygame.MOUSEBUTTONUP:
                 game_process.events(e)
-            elif e.type == pygame.QUIT:
+            if e.type == pygame.QUIT:
                     mainloop = False
         game_process.update(clock.get_time())
         game_process.render(screen)

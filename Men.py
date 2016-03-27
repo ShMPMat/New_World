@@ -11,7 +11,7 @@ class Men():
         # Основные параметры персонажа
         self.name = name                        # Имя
         self.cor = cor                          # Координаты
-        self.speed = 5                          # Скорость передвижения
+        self.speed = 10                         # Скорость передвижения
         self.body = {                           # Изображения частей тела персонажей по умолчанию
             "head": Render_functions.load_image(body[1], alpha_cannel="True"),                  # Голова
             "body": Render_functions.load_image(body[0], alpha_cannel="True"),                  # Тело
@@ -29,6 +29,8 @@ class Men():
             "shooting": skills[2]                                                      # Стрельба
         }
         self.animations = {}
+        self.inventory_list = []
+        self.inventory = [[[0,0,0],[0,0,0],[0,0,0]],[[0,0],[0,0]]]
         self.animations_update(body, gear)
         self.spells = spelllist                         # Заклинания
         self.effects = []                               # Эффекты, наложеные на персонажа
@@ -40,7 +42,6 @@ class Men():
         self.__update_armor
         self.action_points = 15                         # Очки действий
         self.dead = False                               # Мертв ли персонаж
-
     # Технические заморочки
         self.coofs = {                          # Коэффициенты (стоимость движения)
             "stepwise_move": STEPWISE_MOVE,                                                 # Движение на клетку
@@ -63,11 +64,14 @@ class Men():
         self.whizbangs = []
         self.angle = 0
 
+        self.vision_length = 10
+        self.visinon_f = None
+
     def update(self, dt, all_persons):
         if self.dead:
             return
         self.worktime += dt
-        if not self.worktime >= self.anim_speed:
+        if self.worktime < self.anim_speed:
             return
         self.worktime -= self.anim_speed
         if not self.stepwise_mod and self.action_points < 15:
@@ -102,6 +106,27 @@ class Men():
             w.update()
             if w.end:
                 self.whizbangs.remove(w)
+
+    def update_visionfield(self):
+        pass
+
+    def update_inventory(self, thing, cor, part):
+        if cor[0]+thing.size[0] > len(self.inventory[part][0]) or cor[1]+thing.size[1] > len(self.inventory[part]):
+            return False
+        width = (cor[0]+n for n in range(thing.size[0]))
+        height = (cor[1]+n for n in range(thing.size[1]))
+        lst = []
+        for x in width:
+            for y in height:
+                lst.append((x,y))
+        for x, y in lst:
+            if self.inventory[part][y][x]:
+                return False
+        for x, y in lst:
+            self.inventory[part][y][x] = 1
+        self.inventory_list.append((thing,cor))          #fixme! 3455frgdfy567
+        return True
+
 
     def move(self, new_cor):
         """
@@ -350,7 +375,6 @@ class Men():
                 body = self.get_anim_frame()
         if not body:
             if self.gear["Outerwear"]:
-                print(self.gear["Outerwear"])
                 body = self.gear["Outerwear"].img
             else:
                 body = self.body["body"]

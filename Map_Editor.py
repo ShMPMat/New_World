@@ -246,7 +246,8 @@ objects = {
         # Все доступные объекты
     "Floor" : {
         1: Tile.Floor((0, 0), "B_Tile.png", 1),
-        2: Tile.Floor((0, 0), "Tile-2.png", 2)
+        2: Tile.Floor((0, 0), "Tile-2.png", 2),
+        3: Tile.Floor((0, 0), "Ground_1.png", 3)
     },
     "Wall": {
         1: Tile.Wall((0, 0), "Wall_1.png", 1)
@@ -300,7 +301,7 @@ while mainloop:
                     render_coof[0] += e.rel[0]
                     render_coof[1] += e.rel[1]
     # Начало скрипта определения и отрисовки тайлов!
-    world_img = Render_functions.scene_render(field.map_f, field.map_w, objects, world_img, TILE_SIZE)
+    world_img = Render_functions.scene_render(field.map_f, field.map_w, objects, world_img)
     # Конец скрипта определения и отрисовки тайлов!
     screen.blit(world_img, render_coof)         # Клеим поле
     # print("Координаты world_img = ", world_img.width)
