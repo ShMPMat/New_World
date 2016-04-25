@@ -16,3 +16,7 @@ class Camera():
     def move(self, value):
         self.cor[0] += value[0]
         self.cor[1] += value[1]
+        if self.cor[0] > 0:
+            self.cor[0] = 0
+        if self.cor[1] > 0:
+            self.cor[1] = 0

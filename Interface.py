@@ -197,6 +197,8 @@ class Interface():
             if self.path:
                 for tile in self.path:
                     screen.blit(self.pathmarker, (coof[0]+tile[0]*100, coof[1]+tile[1]*100))
+            for tile in self.character.vision_field:
+                    screen.blit(self.pathmarker, (coof[0]+tile[0]*100, coof[1]+tile[1]*100))
             for npc in self.npc_list:
                 if npc.aggression:
                     cor = npc.get_coords_on_map()[0] + self.camera.cor[0], npc.get_coords_on_map()[1] + self.camera.cor[1]

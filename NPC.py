@@ -4,28 +4,25 @@ from findPathLee import findPath
 
 
 class NPC(Men):
-    def __init__(self, name, cor, aggression=True, vision=3, skills=(1, 1, 1), spelllist = (), body=("Body_1.png", "Head_1.png"), gear=("White_doc_robe.png", None)):
-        super().__init__(name, cor, skills=skills, spelllist=spelllist, body=body, gear=gear)
+    def __init__(self, name, group, cor, map_f, map_w, aggression=True, vision=3, skills=(1, 1, 1), spelllist = (), body=("Body_1.png", "Head_1.png"), gear=("White_doc_robe.png", None)):
+        super().__init__(name, group, cor, map_f, map_w, skills=skills, spelllist=spelllist, body=body, gear=gear)
         self.aggression = aggression
         self.search = False
         self.search_point = None
         self.alarm = False
-        self.vision = vision
-        self.visionfield_update()
         self.finish = False
 
-    def update(self, dt, char, map_f, map_w, map_w_phisic, all_persons):
+    def update(self, dt, char, map_f, map_w, all_persons):
         if self.dead:
             self.finish = True
         else:
-            self.visionfield_update()
             self.attackfield_update()
-            self.AI(char, map_f, map_w, map_w_phisic)
+            self.AI(char, map_f, map_w)
             super().update(dt, all_persons)
             if self.stepwise_mod and self.action_points - self.coofs['stepwise_move'] < 0 and not self.anim_play:
                 self.finish = True
 
-    def AI(self, char, map_f, map_w, map_w_phisic):
+    def AI(self, char, map_f, map_w):
         """
                 Интеллект NPC. Он уже может:
                     1.
@@ -48,22 +45,20 @@ class NPC(Men):
                         except:
                             pass
         if self.aggression:
-            if self.check_for_visibility(map_w_phisic, ((self.cor[0]+0.5,self.cor[1]+0.5),(char.cor[0]+0.5,char.cor[1]+0.5))):
-                # print("3232377777777777777777777")
-                if self.vision_field.collidepoint(char.cor[0], char.cor[1]): #
-                    self.alarm = True
-                    if not self.path:
-                        self.set_path(findPath(map_f, map_w, self.cor, char.cor))
-                        if self.path != -1:
-                            self.path = self.path[:-1]
-                else:
-                    self.alarm = False
-                    if not self.path:
-                        self.finish = True
-                if self.attack_field.collidepoint(char.cor[0], char.cor[1]):
-                    self.path = None
-                    if self.alarm:
-                        self.set_target(char)
+            if char.cor in self.vision_field:
+                self.alarm = True
+                if not self.path:
+                    self.set_path(findPath(map_f, map_w, self.cor, char.cor))
+                    if self.path != -1:
+                        self.path = self.path[:-1]
+            else:
+                self.alarm = False
+                if not self.path:
+                    self.finish = True
+            if self.attack_field.collidepoint(char.cor[0], char.cor[1]):
+                self.path = None
+                if self.alarm:
+                    self.set_target(char)
         else:
             self.finish = True
         if not self.alarm and not self.search and not self.path:
@@ -89,6 +84,3 @@ class NPC(Men):
         else:
             self.finish = True
             return False
-
-    def visionfield_update(self):
-        self.vision_field = pygame.Rect(self.cor[0]-self.vision, self.cor[1]-self.vision, self.vision*2+1, self.vision*2+1)

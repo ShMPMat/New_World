@@ -4,6 +4,7 @@ import Thing
 from Character import Character
 from Camera import Camera
 from Interface import Interface
+from Groups import groups
 from NPC import NPC
 import Render_functions
 import pickle
@@ -12,13 +13,12 @@ import Spell
 
 
 class GameProcess():
-    def __init__(self, phisic_wallmap):
+    def __init__(self, map_f, map_w):
         self.turn = -1                      # Очередь хода в пошаговом режиме (-1 - это наш персонаж)
-        self.character = Character("Test Character", (0, 0), skills=(1, 3, 1), spelllist=(Spell.fireball, Spell.improve_aah), gear=(doctor_robe, None))     # Создание игрового персонажа
-        self.all_npc = [NPC("Test_Enemy", (1, 4), gear=(None, None)), NPC("Test_Enemy_2", (4, 2), gear=(None, None))]                                       # Ссылка на всех NPC
+        self.character = Character("Test Character", groups["cher"], (2, 0), map_f, map_w, skills=(1, 3, 1), spelllist=(Spell.fireball, Spell.improve_aah), gear=(doctor_robe, None))     # Создание игрового персонажа
+        self.all_npc = [NPC("Test_Enemy", groups["enemy"], (1, 4), map_f, map_w, gear=(None, None)), NPC("Test_Enemy_2", groups["enemy"], (4, 2), map_f, map_w, gear=(None, None))]                                       # Ссылка на всех NPC
         self.all_persons = [self.character]
-        self.all_persons.extend(self.all_npc)                                                                                                               # Все персонажи
-        self.phisic_wallmap = phisic_wallmap
+        self.all_persons.extend(self.all_npc)
         self.camera = Camera([0,0])
         self.interface = Interface(self.character, self.all_npc, (RES_X, RES_Y), map_f, map_w, self.camera)
         self.interface.buttons.append(Buttons.Button("Пошагово/Реальное время", (0, RES_Y-20), self.change_mod))
@@ -37,7 +37,7 @@ class GameProcess():
                 self.character.update(dt, self.all_persons)
             else:
                 try:
-                    self.all_npc[self.turn].update(dt, self.character, map_f, map_w, self.phisic_wallmap, self.all_persons)
+                    self.all_npc[self.turn].update(dt, self.character, map_f, map_w, self.all_persons)
                     print(self.turn, "   Закончил -    ", self.all_npc[self.turn].finish, "  Тревога -  ", self.all_npc[self.turn].alarm, "  ОД   ", self.all_npc[self.turn].action_points, "   Путь   ", self.all_npc[self.turn].path)
                     if self.all_npc[self.turn].finish:
                         self.turn += 1
@@ -47,7 +47,7 @@ class GameProcess():
         else:
             self.character.update(dt, self.all_persons)
             for npc in self.all_npc:
-                npc.update(dt, self.character, map_f, map_w, self.phisic_wallmap, self.all_persons)
+                npc.update(dt, self.character, map_f, map_w, self.all_persons)
                 if npc.alarm:
                     self.on_stepwise_mod()
 
@@ -102,27 +102,6 @@ def set_scene(scene_value):
     """
     scene_value[0][0] = scene_value[1]
 
-def get_phisic_wallmap(map_wall):
-    phisic_wallmap = []
-    y = 0
-    for line in map_w:
-        x = 0
-        for tile in line:
-            z = 0
-            for dir in tile:
-                if dir == 1:
-                    if z == 0:
-                        phisic_wallmap.append(((x, y+1), (x+1, y+1)))
-                    elif z == 1:
-                        phisic_wallmap.append(((x, y), (x, y+1)))
-                    elif z == 2:
-                        phisic_wallmap.append(((x, y), (x+1, y)))
-                    elif z == 3:
-                        phisic_wallmap.append(((x+1, y), (x+1, y+1)))
-                z += 1
-            x += 1
-        y += 1
-    return phisic_wallmap
 
 
 # Globals
@@ -135,7 +114,7 @@ RES_Y = 700                                         # Разрешение по 
 file = open('d', 'rb')                              # Открыть файл с картами
 map_f, map_w, map_d = pickle.load(file)             # Загрузить карты в собственные переменные
 file.close()                                        # Закрыть файл с картами
-phisic_wallmap = get_phisic_wallmap(map_w)
+
 
 pygame.init()                                       # PyGame начинает работу
 screen = pygame.display.set_mode((RES_X, RES_Y))    # Создаем окно программы
@@ -147,7 +126,7 @@ mainloop = True                                     # Двигатель гла�
 doctor_robe = Thing.Equipment("Врачебный халат","White_doc_robe_icon.png", (2,2), 2,1000, 0, "White_doc_robe.png", "White_doc_robe_s.png")
 bulletproof_vest = Thing.Equipment("Бронежилет","Bulletproof_vest_icon.png", (2,2), 2,1000, 0, "Bulletproof_vest.png", "Bulletproof_vest_s.png")
 
-game_process = GameProcess(phisic_wallmap)
+game_process = GameProcess(map_f, map_w)
 
 objects = {     # Все доступные объекты
     "Floor": {
@@ -159,6 +138,8 @@ objects = {     # Все доступные объекты
         1: Tile.Wall((0, 0), "Wall_1.png", 1)
     }
 }
+
+print(map_w)
 
 while mainloop:
     screen.fill((0, 0, 0))
