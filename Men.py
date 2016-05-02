@@ -6,6 +6,7 @@ import Spell
 import math
 from math import copysign, fabs
 
+
 class Men():
     def __init__(self, name, group, cor, map_f, map_w, attack=1, skills=(1, 1, 1), spelllist = (), body=("Body_1.png", "Head_1.png"), gear=(None, None)):
         # Основные параметры персонажа
@@ -17,13 +18,13 @@ class Men():
             "head": Render_functions.load_image(body[1], alpha_cannel="True"),                  # Голова
             "body": Render_functions.load_image(body[0], alpha_cannel="True"),                  # Тело
         }
-        self.gear = {"Outerwear" : None,                           # Снаряжение
-                     "Wearpon" : None
-        }
+        self.gear = {"Outerwear": None,                           # Снаряжение
+                     "Wearpon": None
+                     }
         if gear[0]:
             self.gear["Outerwear"] = gear[0]    # Куртка\Костюм
         if gear[1]:
-            self.gear["Wearpon"] =  gear[1]    # Оружие
+            self.gear["Wearpon"] = gear[1]    # Оружие
         self.skills = {                         # Навыки
             "magic":    skills[0],                                                     # Магия
             "strength": skills[1],                                                     # Сила
@@ -31,7 +32,7 @@ class Men():
         }
         self.animations = {}
         self.inventory_list = []
-        self.inventory = [[[0,0,0],[0,0,0],[0,0,0]],[[0,0],[0,0]]]
+        self.inventory = [[[0, 0, 0], [0, 0, 0], [0, 0, 0]], [[0, 0], [0, 0]]]
         self.animations_update(body, gear)
         self.spells = spelllist                         # Заклинания
         self.effects = []                               # Эффекты, наложеные на персонажа
@@ -70,7 +71,6 @@ class Men():
         self.map_w = map_w
         self.update_visionfield()
 
-
     def update(self, dt, all_persons):
         if self.dead:
             return
@@ -90,19 +90,19 @@ class Men():
                         self.stop()
                         break
         if self.path:
-            if self.path[0] != self.cor:
-                if self.stepwise_mod and self.action_points - self.coofs['stepwise_move'] < 0:
-                    self.stop()
-                else:
-                    if type(self.path[0]) == int:
-                        self.move(self.path)
-                    else:
-                        self.move(self.path[0])
+            if self.stepwise_mod and self.action_points - self.coofs['stepwise_move'] < 0:
+                self.stop()
             else:
-                self.update_visionfield()
-                self.path = self.path[1:]
-                if self.stepwise_mod:
-                    self.use_action_points(self.coofs['stepwise_move'])
+                if type(self.path[0]) == int:
+                    self.move(self.path)
+                else:
+                    self.move(self.path[0])
+            if self.path != None:
+                if self.path[0] == self.cor:
+                    self.update_visionfield()
+                    self.path = self.path[1:]
+                    if self.stepwise_mod:
+                        self.use_action_points(self.coofs['stepwise_move'])
         elif self.target:
             self.attackfield_update()
             self.hit()
@@ -114,7 +114,7 @@ class Men():
 
     def update_visionfield(self):
         def app(lst, tile):
-            if not tile in lst:
+            if tile not in lst:
                 lst.append(tile)
         past_list = []
         sub = []
@@ -124,63 +124,64 @@ class Men():
         actual_list = [self.cor]
         for _ in range(self.vision_length):
             if unseen_list:
-                for tile in unseen_list:
+                for x, y in unseen_list:
                     try:
-                        if fabs((self.cor[0]-tile[0])/(self.cor[1]-tile[1])) >= 1:
-                            unseen.append((tile[0]+int(copysign(1,tile[0]-self.cor[0])), tile[1]))
-                            unseen.append((tile[0]+int(copysign(1,tile[0]-self.cor[0])), tile[1]+int(copysign(1,tile[1]-self.cor[1]))))
-                        if fabs((self.cor[1]-tile[1])/(self.cor[0]-tile[0])) >= 1:
-                            unseen.append((tile[0], tile[1]+int(copysign(1,tile[1]-self.cor[1]))))
-                            unseen.append((tile[0]+int(copysign(1,tile[0]-self.cor[0])), tile[1]+int(copysign(1,tile[1]-self.cor[1]))))
+                        if fabs((self.cor[0]-x)/(self.cor[1]-y)) >= 1:
+                            unseen.append((x+int(copysign(1, y-self.cor[0])), y))
+                            unseen.append((y+int(copysign(1, y-self.cor[0])), y+int(copysign(1, y-self.cor[1]))))
+                        if fabs((self.cor[1]-y)/(self.cor[0]-x)) >= 1:
+                            unseen.append((x, y+int(copysign(1, y-self.cor[1]))))
+                            unseen.append((x+int(copysign(1, x-self.cor[0])), y+int(copysign(1, y-self.cor[1]))))
                     except:
-                        if self.cor[0]==tile[0]:
-                            unseen.append((tile[0]-1, tile[1]+int(copysign(1,tile[0]-self.cor[0]))))
-                            unseen.append((tile[0]+1, tile[1]+int(copysign(1,tile[0]-self.cor[0]))))
+                        if self.cor[0]==x:
+                            unseen.append((x-1, y+int(copysign(1, x-self.cor[0]))))
+                            unseen.append((x+1, y+int(copysign(1, x-self.cor[0]))))
                         else:
-                            unseen.append((tile[0]+int(copysign(1,tile[1]-self.cor[1])), tile[1]-1))
-                            unseen.append((tile[0]+int(copysign(1,tile[1]-self.cor[1])), tile[1]+1))
+                            unseen.append((x+int(copysign(1, y-self.cor[1])), y-1))
+                            unseen.append((x+int(copysign(1, y-self.cor[1])), y+1))
+                    unseen_list.remove((x,y))
             if unseen:
                 for tile in unseen:
                     app(unseen_list, tile)
-            for tile in actual_list:
-                if not tile:
-                    app(unseen_list, tile)
-                elif self.cor[0] - tile[0] > 0 and self.map_w[tile[1]][tile[0]][3]:
-                    app(unseen_list, tile)
-                elif self.cor[0] - tile[0] < 0 and self.map_w[tile[1]][tile[0]][1]:
-                    app(unseen_list, tile)
-                elif self.cor[1] - tile[1] < 0 and self.map_w[tile[1]][tile[0]][2]:
-                    app(unseen_list, tile)
-                elif self.cor[1] - tile[1] > 0 and self.map_w[tile[1]][tile[0]][0]:
-                    app(unseen_list, tile)
+            for x, y in actual_list:
+                if not (x, y):
+                    app(unseen_list, (x, y))
+                elif self.cor[0] - x > 0 and self.map_w[y][x][3]:
+                    app(unseen_list, (x, y))
+                elif self.cor[0] - x < 0 and self.map_w[y][x][1]:
+                    app(unseen_list, (x, y))
+                elif self.cor[1] - y < 0 and self.map_w[y][x][2]:
+                    app(unseen_list, (x, y))
+                elif self.cor[1] - y > 0 and self.map_w[y][x][0]:
+                    app(unseen_list, (x, y))
                 else:
-                    vision_list.append(tile)
-                    if tile[0]+1 >= len(self.map_f[0]):
-                        app(unseen_list, (tile[0]+1,tile[1]))
-                    elif self.map_w[tile[1]][tile[0]+1][1] or self.map_w[tile[1]][tile[0]][3]:
-                        app(unseen_list, (tile[0]+1,tile[1]))
-                    elif not (tile[0]+1,tile[1]) in past_list and not (tile[0]+1,tile[1]) in unseen_list:
-                        sub.append((tile[0]+1,tile[1]))
-                    if tile[0] <= 0:
-                        app(unseen_list, (tile[0]-1,tile[1]))
-                    elif self.map_w[tile[1]][tile[0]-1][3]  or self.map_w[tile[1]][tile[0]][1]:
-                        app(unseen_list, (tile[0]-1,tile[1]))
-                    elif not (tile[0]-1,tile[1]) in past_list and not (tile[0]-1,tile[1]) in unseen_list:
-                        sub.append((tile[0]-1,tile[1]))
-                    if tile[1]+1 >= len(self.map_f):
-                        app(unseen_list, (tile[0],tile[1]+1))
-                    elif self.map_w[tile[1]+1][tile[0]][2] or self.map_w[tile[1]][tile[0]][0]:
-                        app(unseen_list, (tile[0],tile[1]+1))
-                    elif not (tile[0],tile[1]+1) in past_list and not (tile[0],tile[1]+1) in unseen_list:
-                        sub.append((tile[0],tile[1]+1))
-                    if tile[1] <= 0:
-                        app(unseen_list, (tile[0],tile[1]-1))
-                    elif self.map_w[tile[1]-1][tile[0]][0] or self.map_w[tile[1]][tile[0]][2]:
-                        app(unseen_list, (tile[0],tile[1]-1))
-                    elif not (tile[0],tile[1]-1) in past_list and not (tile[0],tile[1]-1) in unseen_list:
-                        sub.append((tile[0],tile[1]-1))
-                    past_list.append(tile)
-                    actual_list.remove(tile)
+                    vision_list.append((x, y))
+                    if x+1 >= len(self.map_f[0]):
+                        app(unseen_list, (x+1, y))
+                    elif self.map_w[y][x+1][1] or self.map_w[y][x][3]:
+                        app(unseen_list, (x+1, y))
+                    elif not (x+1, y) in past_list and not (x+1, y) in unseen_list:
+                        sub.append((x+1, y))
+                    if x <= 0:
+                        app(unseen_list, (x-1, y))
+                    elif self.map_w[y][x-1][3] or self.map_w[y][x][1]:
+                        app(unseen_list, (x-1, y))
+                    elif not (x-1, y) in past_list and not (x-1, y) in unseen_list:
+                        sub.append((x-1, y))
+                    if y+1 >= len(self.map_f):
+                        app(unseen_list, (x, y+1))
+                    elif self.map_w[y+1][x][2] or self.map_w[y][x][0]:
+                        app(unseen_list, (x, y+1))
+                    elif not (x, y+1) in past_list and not (x, y+1) in unseen_list:
+                        sub.append((x, y+1))
+                    if x <= 0:
+                        app(unseen_list, (x, y-1))
+                    elif self.map_w[y-1][x][0] or self.map_w[y][x][2]:
+                        app(unseen_list, (x, y-1))
+                    elif not (x, y-1) in past_list and not (x, y-1) in unseen_list:
+                        sub.append((x, y-1))
+                    past_list.append((x, y))
+                    actual_list.remove((x, y))
             actual_list.extend(sub)
             sub.clear()
         self.vision_field = vision_list
@@ -199,9 +200,8 @@ class Men():
                 return False
         for x, y in lst:
             self.inventory[part][y][x] = 1
-        self.inventory_list.append((thing,cor))          #fixme! 3455frgdfy567
+        self.inventory_list.append((thing, cor))          # fixme! 3455frgdfy567
         return True
-
 
     def move(self, new_cor):
         """
@@ -354,8 +354,10 @@ class Men():
         if cor[0]-self.cor[0] > 0:
             a = -a + 360
         if self.rotate != a:
+            self.anim_play = "rotate"
             self.img_rotate(a)
         else:
+            self.anim_play = False
             return True
 
     def animations_update(self, body, gear):
@@ -364,7 +366,7 @@ class Men():
         else:
             foundation = body[0][:-4]
         self.animations = {
-            "b_punch" : (Render_functions.load_image(foundation+"_a_punch1.png", alpha_cannel="True"),
+            "b_punch": (Render_functions.load_image(foundation+"_a_punch1.png", alpha_cannel="True"),
                        Render_functions.load_image(foundation+"_a_punch2.png", alpha_cannel="True"),
                        Render_functions.load_image(foundation+"_a_punch3.png", alpha_cannel="True"),
                        Render_functions.load_image(foundation+"_a_punch4.png", alpha_cannel="True"),

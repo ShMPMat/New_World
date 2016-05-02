@@ -16,10 +16,10 @@ class GameProcess():
     def __init__(self, map_f, map_w):
         self.turn = -1                      # Очередь хода в пошаговом режиме (-1 - это наш персонаж)
         self.character = Character("Test Character", groups["cher"], (2, 0), map_f, map_w, skills=(1, 3, 1), spelllist=(Spell.fireball, Spell.improve_aah), gear=(doctor_robe, None))     # Создание игрового персонажа
-        self.all_npc = [NPC("Test_Enemy", groups["enemy"], (1, 4), map_f, map_w, gear=(None, None)), NPC("Test_Enemy_2", groups["enemy"], (4, 2), map_f, map_w, gear=(None, None))]                                       # Ссылка на всех NPC
+        self.all_npc = [NPC("Test_Enemy", groups["enemy"], (1, 4), map_f, map_w, gear=(None, None)), NPC("Test_Enemy_2", groups["enemy"], (4, 2), map_f, map_w, gear=(None, None))]       # Ссылка на всех NPC
         self.all_persons = [self.character]
         self.all_persons.extend(self.all_npc)
-        self.camera = Camera([0,0])
+        self.camera = Camera([0,0], (len(map_f[0])*100, len(map_f)*100), (RES_X, RES_Y))
         self.interface = Interface(self.character, self.all_npc, (RES_X, RES_Y), map_f, map_w, self.camera)
         self.interface.buttons.append(Buttons.Button("Пошагово/Реальное время", (0, RES_Y-20), self.change_mod))
         self.interface.buttons.append(Buttons.Button_Img(("Persona_icon.png","Persona_icon_2.png"), (RES_X-135, 7), self.interface.window_manager, arg=1))
@@ -37,8 +37,8 @@ class GameProcess():
                 self.character.update(dt, self.all_persons)
             else:
                 try:
-                    self.all_npc[self.turn].update(dt, self.character, map_f, map_w, self.all_persons)
-                    print(self.turn, "   Закончил -    ", self.all_npc[self.turn].finish, "  Тревога -  ", self.all_npc[self.turn].alarm, "  ОД   ", self.all_npc[self.turn].action_points, "   Путь   ", self.all_npc[self.turn].path)
+                    self.all_npc[self.turn].update(dt, map_f, map_w, self.get_objects_in_area(self.all_npc[self.turn].vision_field), self.all_persons)
+                    print(self.turn, "   Закончил -    ", self.all_npc[self.turn].path, "  Тревога -  ", self.all_npc[self.turn].alarm, "  ОД   ", self.all_npc[self.turn].action_points, "Анимация - ", self.all_npc[self.turn].anim_play)
                     if self.all_npc[self.turn].finish:
                         self.turn += 1
                 except:
@@ -47,8 +47,8 @@ class GameProcess():
         else:
             self.character.update(dt, self.all_persons)
             for npc in self.all_npc:
-                npc.update(dt, self.character, map_f, map_w, self.all_persons)
-                if npc.alarm:
+                npc.update(dt, map_f, map_w, self.get_objects_in_area(npc.vision_field), self.all_persons)
+                if self.character in npc.alarm:
                     self.on_stepwise_mod()
 
     def on_stepwise_mod(self):
@@ -87,6 +87,14 @@ class GameProcess():
         except:
             self.all_npc.action_points = 15
             self.all_npc.finish = False
+
+    def get_objects_in_area(self, area):
+        objects = []
+        for tile in area:
+            for man in self.all_persons:
+                if tile == man.cor:
+                    objects.append(man)
+        return objects
 
     def render(self, screen):
         self.world_img = Render_functions.scene_render(map_f, map_w, objects, self.world_img)
@@ -138,8 +146,6 @@ objects = {     # Все доступные объекты
         1: Tile.Wall((0, 0), "Wall_1.png", 1)
     }
 }
-
-print(map_w)
 
 while mainloop:
     screen.fill((0, 0, 0))

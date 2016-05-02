@@ -165,6 +165,24 @@ class Interface():
             self.active_windows.append(num)
 
     def render(self, screen, coof):
+        if self.character.stepwise_mod:
+            if self.stepwise_buttons:
+                for but in self.stepwise_buttons:
+                    but.render(screen)
+            if self.path:
+                for tile in self.path:
+                    screen.blit(self.pathmarker, (coof[0]+tile[0]*100, coof[1]+tile[1]*100))
+            # for tile in self.character.vision_field:
+            #         screen.blit(self.pathmarker, (coof[0]+tile[0]*100, coof[1]+tile[1]*100))
+            for npc in self.npc_list:
+                for tile in npc.vision_field:
+                    screen.blit(self.pathmarker, (coof[0]+tile[0]*100, coof[1]+tile[1]*100))
+                cor = npc.get_coords_on_map()[0] + self.camera.cor[0], npc.get_coords_on_map()[1] + self.camera.cor[1]
+                screen.blit(Render_functions.load_text(str(npc.healf), color=(200, 0, 0)), (cor[0]+5, cor[1]+5))
+                screen.blit(Render_functions.load_text(str(npc.manna), color=(0, 0, 150)), (cor[0]+5, cor[1]+19))
+                screen.blit(Render_functions.load_text(str(npc.armor), color=(100, 100, 100)), (cor[0]+5, cor[1]+33))
+            if self.character.dead:
+                screen.blit(Render_functions.load_text("Вы мертвы", pt=200, color=(220, 0, 0)), (80, self.resolution[1]/2-100))
         screen.blit(Render_functions.load_text("Здоровье "+str(self.character.healf)+"|"+str(self.character.max_healf)), (self.resolution[0]-110, 5))
         screen.blit(Render_functions.load_text("Манна "+str(self.character.manna)+"|"+str(self.character.max_manna)), (self.resolution[0]-110, 25))
         screen.blit(Render_functions.load_text("Броня "+str(self.character.armor)), (self.resolution[0]-110, 45))
@@ -190,23 +208,6 @@ class Interface():
                     screen.blit(Render_functions.load_image('Shield.png', alpha_cannel="True"), (x, y))
         else:
             screen.blit(Render_functions.load_image('Fist.png', alpha_cannel="True"), (x, y))
-        if self.character.stepwise_mod:
-            if self.stepwise_buttons:
-                for but in self.stepwise_buttons:
-                    but.render(screen)
-            if self.path:
-                for tile in self.path:
-                    screen.blit(self.pathmarker, (coof[0]+tile[0]*100, coof[1]+tile[1]*100))
-            for tile in self.character.vision_field:
-                    screen.blit(self.pathmarker, (coof[0]+tile[0]*100, coof[1]+tile[1]*100))
-            for npc in self.npc_list:
-                if npc.aggression:
-                    cor = npc.get_coords_on_map()[0] + self.camera.cor[0], npc.get_coords_on_map()[1] + self.camera.cor[1]
-                    screen.blit(Render_functions.load_text(str(npc.healf), color=(200, 0, 0)), (cor[0]+5, cor[1]+5))
-                    screen.blit(Render_functions.load_text(str(npc.manna), color=(0, 0, 150)), (cor[0]+5, cor[1]+19))
-                    screen.blit(Render_functions.load_text(str(npc.armor), color=(100, 100, 100)), (cor[0]+5, cor[1]+33))
-            if self.character.dead:
-                screen.blit(Render_functions.load_text("Вы мертвы", pt=200, color=(220, 0, 0)), (80, self.resolution[1]/2-100))
         if self.active_windows:
             for n in self.active_windows:
                 self.windows[n].render(screen)
