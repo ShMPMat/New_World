@@ -42,7 +42,7 @@ class Men():
         self.manna = self.skills["magic"]*10            # Текущие очки манны
         self.armor = 0                                  # Показатель брони
         self.__update_armor
-        self.action_points = 15                         # Очки действий
+        self.action_points = 0                         # Очки действий
         self.dead = False                               # Мертв ли персонаж
     # Технические заморочки
         self.coofs = {                          # Коэффициенты (стоимость движения)
@@ -78,8 +78,6 @@ class Men():
         if self.worktime < self.anim_speed:
             return
         self.worktime -= self.anim_speed
-        if not self.stepwise_mod and self.action_points < 15:
-            self.action_points += 1
         if self.path:
             for per in all_persons:
                 if not per.dead:
@@ -90,19 +88,11 @@ class Men():
                         self.stop()
                         break
         if self.path:
-            if self.stepwise_mod and self.action_points - self.coofs['stepwise_move'] < 0:
-                self.stop()
-            else:
-                if type(self.path[0]) == int:
-                    self.move(self.path)
-                else:
-                    self.move(self.path[0])
-            if self.path != None:
+            self.move(self.path[0])
+            if self.path:
                 if self.path[0] == self.cor:
                     self.update_visionfield()
                     self.path = self.path[1:]
-                    if self.stepwise_mod:
-                        self.use_action_points(self.coofs['stepwise_move'])
         elif self.target:
             self.attackfield_update()
             self.hit()
@@ -207,37 +197,44 @@ class Men():
         """
                 Двигает персонажа с тайла на тайл и отображает процесс
         """
-        if new_cor[0] > self.cor[0]:        # Вправо
-            if self.look_direction(new_cor):
+        if self.look_direction(new_cor):
+            if self.move_progress[0] == 0 and self.move_progress[1] == 0 and self.stepwise_mod:
+                if not self.use_action_points(self.coofs['stepwise_move']):
+                    self.stop()
+            if new_cor[0] > self.cor[0]:        # Вправо
                 self.move_progress[0] += self.speed
                 if self.move_progress[0] >= 100:
                     self.move_progress[0] = 0
                     self.cor = new_cor
-        elif new_cor[0] < self.cor[0]:        # Влево
-            if self.look_direction(new_cor):
+            elif new_cor[0] < self.cor[0]:        # Влево
                 self.move_progress[0] -= self.speed
                 if self.move_progress[0] <= -100:
                     self.move_progress[0] = 0
                     self.cor = new_cor
-        elif new_cor[1] > self.cor[1]:        # Вниз
-            if self.look_direction(new_cor):
+            elif new_cor[1] > self.cor[1]:        # Вниз
                 self.move_progress[1] += self.speed
                 if self.move_progress[1] >= 100:
                     self.move_progress[1] = 0
                     self.cor = new_cor
-        elif new_cor[1] < self.cor[1]:        # Вверх
-            if self.look_direction(new_cor):
+            elif new_cor[1] < self.cor[1]:        # Вверх
                 self.move_progress[1] -= self.speed
                 if self.move_progress[1] <= -100:
                     self.move_progress[1] = 0
                     self.cor = new_cor
+            if self.move_progress[0] != 0 or self.move_progress[1] != 0:
+                self.anim_play = "move"
+            else:
+                self.attackfield_update()
+                self.anim_play = False
+
 
     def stop(self):
         """
                 Остановить персонажа
         """
         if self.path != self.last_stop:
-            self.last_stop = self.path[0]
+            if self.path:
+                self.last_stop = self.path[0]
             self.path = None
 
     def change_mod(self):
@@ -246,24 +243,12 @@ class Men():
         """
         self.stepwise_mod = not self.stepwise_mod
 
-    def use_action_points(self, cost):
-        """
-                Отнять cost очков действий, если при этом их кол-во не станет меньше нуля
-        """
-        if self.action_points >= cost:
-            self.action_points -= cost
-            return True
-        else:
-            return False
-
     def hit(self):
         """
                 Поворачивает персонажа в сторону цели и бьёт её
         """
         if not self.attack_field.collidepoint(self.target.cor[0], self.target.cor[1]):
             return
-        # if self.target != self:
-        #     if self.check_for_visibility()
         if not self.look_direction(self.target.cor):
             return
         if self.anim_play == "b_punch":
@@ -331,12 +316,7 @@ class Men():
         """
         if path == -1:
             return
-        if not self.path:
-            self.path = path
-        elif type(self.path[0]) == int:  # fixme! Жуткий ход. Поправить.
-            print(self.path)
-            self.path = path
-            print(self.path)
+        self.path = path
 
     def look_direction(self, cor):
         """
@@ -413,7 +393,6 @@ class Men():
                 вклеивает на поверхность 100х100 пикселей (размер тайла)
         """
         body = None
-        head = None
         if self.anim_play:
             if "b" in self.anim_play:
                 body = self.get_anim_frame()

@@ -27,12 +27,16 @@ class Interface():
         self.pathmarker = Render_functions.load_image('Pathmarker.png', alpha_cannel="True")  # Картинка выбраного пути
         self.ap = Render_functions.load_image('ActP_active.png', alpha_cannel="True")         # Картинка доступных ОД
         self.wasted_ap = Render_functions.load_image('ActP_wasted.png', alpha_cannel="True")  # Картинка потраченых ОД
+        self.marks = {
+            "Fist": Render_functions.load_image('Fist.png', alpha_cannel="True"),
+            "Shield": Render_functions.load_image('Shield.png', alpha_cannel="True"),
+            "Fireball": Render_functions.load_image('Fireball.png', alpha_cannel="True")
+        }
         self.buttons = []
         self.stepwise_buttons = []
         self.ch = None
         self.des = None
-        self.inventory_cor = (30,100)           # Координаты первого окна инвентаря
-        # self.inventory_count = 0                # Кол-во окон инвентарей
+        self.inventory_cor = (30, 100)           # Координаты первого окна инвентаря
         self.inventory_cors_count = []
         self.windows = [Window(pygame.Rect(0,0,res[0]/2,res[1]-20),"Background.png", [])
                         ]
@@ -141,7 +145,7 @@ class Interface():
             rect = el.get_rect()
             rect.move_ip(cor)
             if rect.collidepoint(e.pos):
-                self.des = el, [e.pos[0]+10,e.pos[1]]
+                self.des = el, [e.pos[0]+10, e.pos[1]]
                 if e.type == pygame.MOUSEBUTTONDOWN:
                     if e.button == 1:
                         self.cursor = [self.character.gear["Outerwear"], list(e.pos), "Outerwear"]
@@ -188,29 +192,22 @@ class Interface():
         screen.blit(Render_functions.load_text("Броня "+str(self.character.armor)), (self.resolution[0]-110, 45))
         if self.buttons:
             for but in self.buttons:
-                    but.render(screen)
-        x = self.resolution[0] - 330
-        y = self.resolution[1] - 25
-        for i in range(15):
-            if i < self.character.action_points:
-                screen.blit(self.ap, (x, y))
-            else:
-                screen.blit(self.wasted_ap, (x, y))
-            x += 22
-        x = self.resolution[0] - 375
+                but.render(screen)
+        x = self.resolution[0] - 45
         y = self.resolution[1] - 45
         w = self.character.gear["Wearpon"]
         if w:
             if type(w) == Spell.Spell:
                 if w.type == "Attacking":
-                    screen.blit(Render_functions.load_image('Fireball.png', alpha_cannel="True"), (x, y))
+                    screen.blit(self.marks["Fireball"], (x, y))
                 elif w.type == "Defence":
-                    screen.blit(Render_functions.load_image('Shield.png', alpha_cannel="True"), (x, y))
+                    screen.blit(self.marks["Shield"], (x, y))
         else:
-            screen.blit(Render_functions.load_image('Fist.png', alpha_cannel="True"), (x, y))
+            screen.blit(self.marks["Fist"], (x, y))
         if self.active_windows:
             for n in self.active_windows:
                 self.windows[n].render(screen)
+
 
 class Window():
     def __init__(self, rect, background, elements):

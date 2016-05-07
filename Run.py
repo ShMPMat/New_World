@@ -8,23 +8,21 @@ from Groups import groups
 from NPC import NPC
 import Render_functions
 import pickle
-import Buttons
+from Buttons import  Button, Button_Img
 import Spell
 
 
 class GameProcess():
     def __init__(self, map_f, map_w):
-        self.turn = -1                      # Очередь хода в пошаговом режиме (-1 - это наш персонаж)
         self.character = Character("Test Character", groups["cher"], (2, 0), map_f, map_w, skills=(1, 3, 1), spelllist=(Spell.fireball, Spell.improve_aah), gear=(doctor_robe, None))     # Создание игрового персонажа
         self.all_npc = [NPC("Test_Enemy", groups["enemy"], (1, 4), map_f, map_w, gear=(None, None)), NPC("Test_Enemy_2", groups["enemy"], (4, 2), map_f, map_w, gear=(None, None))]       # Ссылка на всех NPC
         self.all_persons = [self.character]
         self.all_persons.extend(self.all_npc)
         self.camera = Camera([0,0], (len(map_f[0])*100, len(map_f)*100), (RES_X, RES_Y))
         self.interface = Interface(self.character, self.all_npc, (RES_X, RES_Y), map_f, map_w, self.camera)
-        self.interface.buttons.append(Buttons.Button("Пошагово/Реальное время", (0, RES_Y-20), self.change_mod))
-        self.interface.buttons.append(Buttons.Button_Img(("Persona_icon.png","Persona_icon_2.png"), (RES_X-135, 7), self.interface.window_manager, arg=1))
-        self.interface.stepwise_buttons.append(Buttons.Button("Конец хода", (300, RES_Y-20), self.new_step))
-        self.world_img = pygame.Surface((RES_X, RES_Y))          # Поверхность, на которой отображается весь игровой мир
+        self.interface.buttons.append(Button("Пошагово/Реальное время", (0, RES_Y-20), self.change_mod))
+        self.interface.buttons.append(Button_Img(("Persona_icon.png","Persona_icon_2.png"), (RES_X-135, 7), self.interface.window_manager, arg=1))
+        self.world_img = Render_functions.scene_render(map_f, map_w, objects, pygame.Surface((RES_X, RES_Y)))          # Поверхность, на которой отображается весь игровой мир
 
     def events(self, e):
         self.interface.events(e)
@@ -33,20 +31,20 @@ class GameProcess():
     def update(self, dt):
         self.interface.update()
         if self.character.stepwise_mod:
-            if self.turn == -1:
-                self.character.update(dt, self.all_persons)
-            else:
-                try:
-                    self.all_npc[self.turn].update(dt, map_f, map_w, self.get_objects_in_area(self.all_npc[self.turn].vision_field), self.all_persons)
-                    print(self.turn, "   Закончил -    ", self.all_npc[self.turn].path, "  Тревога -  ", self.all_npc[self.turn].alarm, "  ОД   ", self.all_npc[self.turn].action_points, "Анимация - ", self.all_npc[self.turn].anim_play)
-                    if self.all_npc[self.turn].finish:
-                        self.turn += 1
-                except:
-                    if self.all_npc[self.turn-1].finish:
-                        self.turn = -1
+            self.character.update(dt, self.all_persons)
+            if self.character.action_points and not self.character.anim_play:
+                for npc in self.all_npc:
+                    npc.action_points += self.character.action_points
+                self.character.action_points = 0
+            for npc in self.all_npc:
+                # print("   Закончил -    ", npc.path, "  Тревога -  ", npc.alarm, "  ОД   ", npc.action_points, "Анимация - ", npc.anim_play)
+                npc.update(dt, map_f, map_w, self.get_objects_in_area(npc.vision_field), self.all_persons)
+                if not npc.finish:
+                    break
         else:
             self.character.update(dt, self.all_persons)
             for npc in self.all_npc:
+                npc.action_points = 0
                 npc.update(dt, map_f, map_w, self.get_objects_in_area(npc.vision_field), self.all_persons)
                 if self.character in npc.alarm:
                     self.on_stepwise_mod()
@@ -55,7 +53,6 @@ class GameProcess():
         """
                 Включить пошаговый режим для всех
         """
-        self.turn = -1
         for men in self.all_persons:
             men.stepwise_mod = True
 
@@ -66,27 +63,12 @@ class GameProcess():
         for npc in self.all_npc:
             if npc.alarm:
                 return
-        self.turn = -1
         self.character.change_mod()
         try:
             for npc in self.all_npc:
                 npc.change_mod()
         except:
             self.all_npc.change_mod()
-
-    def new_step(self):
-        """
-                Начать новый ход (он начинается с хода противников)
-        """
-        self.turn = 0
-        self.character.action_points = 15
-        try:
-            for npc in self.all_npc:
-                npc.action_points = 15
-                npc.finish = False
-        except:
-            self.all_npc.action_points = 15
-            self.all_npc.finish = False
 
     def get_objects_in_area(self, area):
         objects = []
@@ -97,10 +79,10 @@ class GameProcess():
         return objects
 
     def render(self, screen):
-        self.world_img = Render_functions.scene_render(map_f, map_w, objects, self.world_img)
+        self.ren = Render_functions.scene_render(map_f, map_w, objects, self.world_img)
         for men in self.all_persons:
-            men.render(self.world_img)
-        screen.blit(self.world_img, self.camera.cor)
+            men.render(self.ren)
+        screen.blit(self.ren, self.camera.cor)
         self.interface.render(screen, self.camera.cor)
 
 
@@ -134,8 +116,6 @@ mainloop = True                                     # Двигатель гла�
 doctor_robe = Thing.Equipment("Врачебный халат","White_doc_robe_icon.png", (2,2), 2,1000, 0, "White_doc_robe.png", "White_doc_robe_s.png")
 bulletproof_vest = Thing.Equipment("Бронежилет","Bulletproof_vest_icon.png", (2,2), 2,1000, 0, "Bulletproof_vest.png", "Bulletproof_vest_s.png")
 
-game_process = GameProcess(map_f, map_w)
-
 objects = {     # Все доступные объекты
     "Floor": {
         1: Tile.Floor((0, 0), "B_Tile.png", 1),
@@ -146,6 +126,8 @@ objects = {     # Все доступные объекты
         1: Tile.Wall((0, 0), "Wall_1.png", 1)
     }
 }
+
+game_process = GameProcess(map_f, map_w)
 
 while mainloop:
     screen.fill((0, 0, 0))

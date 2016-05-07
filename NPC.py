@@ -12,12 +12,10 @@ class NPC(Men):
     def update(self, dt, map_f, map_w, viev_objects, all_persons):
         if self.dead:
             self.finish = True
-        else:
-            self.attackfield_update()
-            self.AI(viev_objects, map_f, map_w)
-            super().update(dt, all_persons)
-            if self.stepwise_mod and self.action_points - self.coofs['stepwise_move'] < 0 and not self.anim_play:
-                self.finish = True
+            return
+        self.finish = False
+        self.AI(viev_objects, map_f, map_w)
+        super().update(dt, all_persons)
 
     def AI(self, viev_objects, map_f, map_w):
         """
@@ -26,22 +24,21 @@ class NPC(Men):
         """
         for object in viev_objects:
             if relations_list[self.group.ID][object.group.ID] < 0 and object != self and not object.dead:
-                if not object in self.alarm:
-                    self.alarm.append(object)
+                if not object.dead:
+                    if not object in self.alarm:
+                        if not self.alarm:
+                            self.action_points = 0
+                        self.alarm.append(object)
+                elif object in self.alarm:
+                    self.alarm.remove(object)
                 if not self.path:
                     self.set_path(findPath(map_f, map_w, self.cor, object.cor))
-                    if self.path != -1:
-                        self.path = self.path[:-1]
-            else:
-                if not self.path and not self.anim_play:
-                    self.finish = True
+            elif not self.anim_play:
+                self.finish = True
+        for object in self.alarm:
             if self.attack_field.collidepoint(object.cor[0], object.cor[1]):
                 self.path = None
-                if self.alarm:
-                    self.set_target(object)
-
-    def hurt(self, damage):
-        super().hurt(damage)
+                self.set_target(object)
 
     def kill_men(self):
         super().kill_men()
@@ -52,9 +49,12 @@ class NPC(Men):
         """
                 Отнять cost очков действий, если при этом их кол-во не станет меньше нуля
         """
+        # print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1")
         if self.action_points >= cost:
+            # print("11111111111111")
             self.action_points -= cost
             return True
         else:
-            self.finish = True
+            if not self.anim_play:
+                self.finish = True
             return False

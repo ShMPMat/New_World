@@ -75,12 +75,6 @@ class EditableField():
         """
         Сохранение
         """
-        # tile_matrix = []
-        # tile_matrix_str = ''
-        # for line in self.map_f:
-        #     for tile in line:
-        #         tile_matrix_str += str(tile) + " "
-        #     tile_matrix_str = tile_matrix_str[:len(tile_matrix_str)]+'\n'
         load_or_save = LoadSave.LoadSave()
         load_or_save.saveFile()
         if load_or_save.savePath:
