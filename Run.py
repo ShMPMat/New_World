@@ -1,6 +1,6 @@
 import pygame
 import Tile
-import Thing
+from Thing import Example, Equipment
 from Character import Character
 from Camera import Camera
 from Interface import Interface
@@ -14,7 +14,9 @@ import Spell
 
 class GameProcess():
     def __init__(self, map_f, map_w):
-        self.character = Character("Test Character", groups["cher"], (2, 0), map_f, map_w, skills=(1, 3, 1), spelllist=(Spell.fireball, Spell.improve_aah), gear=(doctor_robe, None))     # Создание игрового персонажа
+        self.items = {0: Example(doctor_robe), 1: Example(doctor_robe)}
+        self.items[0].update_slots(self.items[1],(0,0))
+        self.character = Character("Test Character", groups["cher"], (2, 0), map_f, map_w, skills=(1, 3, 1), spelllist=(Spell.fireball, Spell.improve_aah), gear=(self.items[0], None))     # Создание игрового персонажа
         self.all_npc = [NPC("Test_Enemy", groups["enemy"], (1, 4), map_f, map_w, gear=(None, None)), NPC("Test_Enemy_2", groups["enemy"], (4, 2), map_f, map_w, gear=(None, None))]       # Ссылка на всех NPC
         self.all_persons = [self.character]
         self.all_persons.extend(self.all_npc)
@@ -112,10 +114,6 @@ clock = pygame.time.Clock()                         # Создаем тайме�
 menu = ["game"]                                     # Меню, которое в данный момент на экране
 mainloop = True                                     # Двигатель главного цикла
 
-
-doctor_robe = Thing.Equipment("Врачебный халат","White_doc_robe_icon.png", (2,2), 2,1000, 0, "White_doc_robe.png", "White_doc_robe_s.png")
-bulletproof_vest = Thing.Equipment("Бронежилет","Bulletproof_vest_icon.png", (2,2), 2,1000, 0, "Bulletproof_vest.png", "Bulletproof_vest_s.png")
-
 objects = {     # Все доступные объекты
     "Floor": {
         1: Tile.Floor((0, 0), "B_Tile.png", 1),
@@ -126,6 +124,10 @@ objects = {     # Все доступные объекты
         1: Tile.Wall((0, 0), "Wall_1.png", 1)
     }
 }
+
+
+doctor_robe = Equipment("Врачебный халат", "White_doc_robe", (2, 2), 2, 1000, (5,5))
+bulletproof_vest = Equipment("Бронежилет", "Bulletproof_vest", (2, 2), 2, 1000, (3,3))
 
 game_process = GameProcess(map_f, map_w)
 

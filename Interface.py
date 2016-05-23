@@ -62,31 +62,29 @@ class Interface():
                 self.map_pass[n.cor[1]][n.cor[0]] = 0
 
     def update_persona_window(self):
-        self.windows[0].elements = [(Render_functions.load_text("Сила -          "+str(self.character.skills["strength"])), (5, 5)),
+        self.windows[0].elements = {"static": [(Render_functions.load_text("Сила -          "+str(self.character.skills["strength"])), (5, 5)),
                                     (Render_functions.load_text("Магия -        "+str(self.character.skills["magic"])), (5, 25)),
                                     (Render_functions.load_text("Стрельба -   "+str(self.character.skills["shooting"])), (5, 45)),
                                     (Render_functions.load_text(str(self.character.name)), (65, self.resolution[1]-40)),
                                     (Render_functions.load_image('Outerwear_s.png', alpha_cannel="True"), (330,200)),
-                                    (Render_functions.load_image('W_s.png', alpha_cannel="True"), (290,180)),
-                                    (Render_functions.load_image('W_s.png', alpha_cannel="True"), (390,180))]
-        if self.character.inventory:                # Проверка на наличие слотов инвентаря и их графическая отрисовка
+                                    (Render_functions.load_image('W_s.png', alpha_cannel="True"), (390,180)),
+                                    (Render_functions.load_image('W_s.png', alpha_cannel="True"), (290,180))],
+                                     "active": []}
+        if self.character.gear["Outerwear"]:                # Проверка на наличие слотов инвентаря и их графическая отрисовка
             cor = list(self.inventory_cor)
             self.inventory_count = 0
-            for i in self.character.inventory:
-                self.windows[0].elements.append((Render_functions.tiled_background("Inventory_tile.png",len(i[0])*20, len(i)*20), tuple(cor)))
-                cor[1] += self.windows[0].elements[-1][0].get_height() + 10
-                self.inventory_cors_count.append(tuple(cor))
-        if self.character.inventory_list:           # Проверка на наличие вещей в инвентаре
-            for el, cor in self.character.inventory_list:
-                self.windows[0].elements.append((el.icon,(self.inventory_cor[0]+cor[0]*20,self.inventory_cor[1]+cor[1]*20)))
-        if self.character.gear["Outerwear"]:
-            self.windows[0].elements.append((self.character.gear["Outerwear"].img_s, (330,200)))
+            self.windows[0].elements["active"].append((Render_functions.tiled_background("Inventory_tile.png", self.character.gear["Outerwear"].slots[0]*20, self.character.gear["Outerwear"].slots[0]*20), tuple(cor)))
+            cor[1] += self.windows[0].elements["active"][-1][0].get_height() + 10
+            self.inventory_cors_count.append((tuple(cor),self.character.gear["Outerwear"]))
+            for j, c in self.character.gear["Outerwear"].items:
+                self.windows[0].elements["active"].append((j.icon, (self.inventory_cor[0]+c.x*20,self.inventory_cor[1]+c.y*20)))
+            self.windows[0].elements["active"].append((self.character.gear["Outerwear"].img_s, (330, 200)))
             if self.des:
-                for el, cor in self.windows[0].elements:
+                for el, cor in self.windows[0].elements["active"]:
                     if self.des[0] == el:
-                        self.windows[0].elements.append((Render_functions.load_text(self.character.gear["Outerwear"].name), self.des[1]))
+                        self.windows[0].elements["active"].append((Render_functions.load_text(self.character.gear["Outerwear"].name), self.des[1]))
         if self.cursor:
-            self.windows[0].elements.append((self.cursor[0].icon, self.cursor[1]))
+            self.windows[0].elements["active"].append((self.cursor[0].icon, self.cursor[1]))
 
     def events(self, e):
         self.z_ind = False
@@ -118,40 +116,36 @@ class Interface():
                             break
                     if t:
                         self.character.set_path(findPath(self.map_pass, self.map_w, self.character.cor, chosen_tile))
-                else:
-                    i = 0
-                    # for el, cor in self.windows[0].elements:
-                    #     if cor != self.inventory_cor:
-                    #         i+=1
-                    #         continue
-                    for c in self.inventory_cors_count:
-                        chosen_tile = Extra_functions.get_click_tile((e.pos[0]-c[0], e.pos[1]-c[1]), self.camera.cor, self.map_f, size=20)
-                        if chosen_tile != -1 and self.cursor:
-                            if self.character.update_inventory(self.cursor[0],chosen_tile,i):
+                elif self.cursor:
+                    for cor, con in self.inventory_cors_count:
+                        chosen_tile = Extra_functions.get_click_tile(e.pos, cor, con.slots, size=20) # Fixme! ДА ЧЕМ Я ВООБЩЕ ДУМАЛ, КОГДА ЭТО ПИСАЛ????
+                        if chosen_tile != -1:
+                            if con.update_slots(self.cursor[0], chosen_tile):
                                 if type(self.cursor[2]) == str:
                                     self.character.gear[self.cursor[2]] = None
-                        i+=1
+                                    break
         if e.type == pygame.MOUSEMOTION and self.cursor:
             self.cursor[1][0] += e.rel[0]
             self.cursor[1][1] += e.rel[1]
         if e.type == pygame.MOUSEBUTTONUP:
             if e.button == 1:
                 self.cursor = None
-        if not self.character.gear["Outerwear"]:
+        if not 0 in self.active_windows:
             return
-        for el, cor in self.windows[0].elements:
-            if el != self.character.gear["Outerwear"].img_s:
-                continue
-            rect = el.get_rect()
-            rect.move_ip(cor)
-            if rect.collidepoint(e.pos):
-                self.des = el, [e.pos[0]+10, e.pos[1]]
-                if e.type == pygame.MOUSEBUTTONDOWN:
-                    if e.button == 1:
-                        self.cursor = [self.character.gear["Outerwear"], list(e.pos), "Outerwear"]
-                        self.windows[0].elements.remove((el, cor))
-            else:
-                self.des = None
+        if self.character.gear["Outerwear"]:
+            for el, cor in self.windows[0].elements["active"]:
+                if el != self.character.gear["Outerwear"].img_s:
+                    continue
+                rect = el.get_rect()
+                rect.move_ip(cor)
+                if rect.collidepoint(e.pos):
+                    self.des = el, [e.pos[0]+10, e.pos[1]]
+                    if e.type == pygame.MOUSEBUTTONDOWN:
+                        if e.button == 1:
+                            self.cursor = [self.character.gear["Outerwear"], list(e.pos), "Outerwear"]
+                            self.windows[0].elements["active"].remove((el, cor))
+                else:
+                    self.des = None
 
     def buttons_up(self, but, lst):
         """
@@ -217,5 +211,7 @@ class Window():
 
     def render(self, screen):
         screen.blit(self.background, self.rect.topleft)
-        for sur, cor in self.elements:
+        for sur, cor in self.elements["static"]:
+            screen.blit(sur, cor)
+        for sur, cor in self.elements["active"]:
             screen.blit(sur, cor)

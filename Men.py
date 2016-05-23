@@ -31,8 +31,6 @@ class Men():
             "shooting": skills[2]                                                      # Стрельба
         }
         self.animations = {}
-        self.inventory_list = []
-        self.inventory = [[[0, 0, 0], [0, 0, 0], [0, 0, 0]], [[0, 0], [0, 0]]]
         self.animations_update(body, gear)
         self.spells = spelllist                         # Заклинания
         self.effects = []                               # Эффекты, наложеные на персонажа
@@ -50,6 +48,7 @@ class Men():
             "stepwise_hand_to_hand": STEPWISE_HAND_TO_HAND                                  # Удар в рукопашную
         }
         self.path = ()                          # Путь, по которому идет персонаж
+        self.actoins = None
         self.rotate = 0                         # Угол, на который повернут персонаж
         self.move_progress = [0, 0]             # Помогает отобразить процесс перехода с одной клетки на другую
         self.anim_speed = 25                    # Скорость смены кадров в миллисекундах
@@ -87,12 +86,12 @@ class Men():
                     elif self.path[0] == per.cor and self != per:
                         self.stop()
                         break
-        if self.path:
-            self.move(self.path[0])
-            if self.path:
-                if self.path[0] == self.cor:
-                    self.update_visionfield()
-                    self.path = self.path[1:]
+        if self.path and not self.actoins:
+            if self.stepwise_mod and self.use_action_points(self.coofs['stepwise_move']):
+                self.actoins = ("m", self.path[0])
+            else:
+                self.actoins = ("m", self.path[0])
+            self.path = self.path[1:]
         elif self.target:
             self.attackfield_update()
             self.hit()
@@ -101,6 +100,12 @@ class Men():
             w.update()
             if w.end:
                 self.whizbangs.remove(w)
+        if self.actoins:
+            if self.actoins[0] == "m":
+                self.move(self.actoins[1])
+                if self.actoins[1] == self.cor:
+                    self.update_visionfield()
+                    self.actoins = None
 
     def update_visionfield(self):
         def app(lst, tile):
@@ -176,31 +181,11 @@ class Men():
             sub.clear()
         self.vision_field = vision_list
 
-    def update_inventory(self, thing, cor, part):
-        if cor[0]+thing.size[0] > len(self.inventory[part][0]) or cor[1]+thing.size[1] > len(self.inventory[part]):
-            return False
-        width = (cor[0]+n for n in range(thing.size[0]))
-        height = (cor[1]+n for n in range(thing.size[1]))
-        lst = []
-        for x in width:
-            for y in height:
-                lst.append((x,y))
-        for x, y in lst:
-            if self.inventory[part][y][x]:
-                return False
-        for x, y in lst:
-            self.inventory[part][y][x] = 1
-        self.inventory_list.append((thing, cor))          # fixme! 3455frgdfy567
-        return True
-
     def move(self, new_cor):
         """
                 Двигает персонажа с тайла на тайл и отображает процесс
         """
         if self.look_direction(new_cor):
-            if self.move_progress[0] == 0 and self.move_progress[1] == 0 and self.stepwise_mod:
-                if not self.use_action_points(self.coofs['stepwise_move']):
-                    self.stop()
             if new_cor[0] > self.cor[0]:        # Вправо
                 self.move_progress[0] += self.speed
                 if self.move_progress[0] >= 100:
@@ -227,7 +212,6 @@ class Men():
                 self.attackfield_update()
                 self.anim_play = False
 
-
     def stop(self):
         """
                 Остановить персонажа
@@ -247,7 +231,7 @@ class Men():
         """
                 Поворачивает персонажа в сторону цели и бьёт её
         """
-        if not self.attack_field.collidepoint(self.target.cor[0], self.target.cor[1]):
+        if not self.attack_field.collidepoint(self.target.cor[0], self.target.cor[1]) or self.target.cor not in self.vision_field:
             return
         if not self.look_direction(self.target.cor):
             return
@@ -342,7 +326,7 @@ class Men():
 
     def animations_update(self, body, gear):
         if gear[0]:
-            foundation = gear[0].img_str[:-4]
+            foundation = gear[0].spec_n
         else:
             foundation = body[0][:-4]
         self.animations = {
