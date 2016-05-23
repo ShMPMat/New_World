@@ -9,13 +9,13 @@ class NPC(Men):
         self.alarm = []
         self.finish = False
 
-    def update(self, dt, map_f, map_w, viev_objects, all_persons):
+    def update(self, time, map_f, map_w, viev_objects, all_persons):
         if self.dead:
             self.finish = True
             return
         self.finish = False
         self.AI(viev_objects, map_f, map_w)
-        super().update(dt, all_persons)
+        super().update(time, all_persons)
 
     def AI(self, viev_objects, map_f, map_w):
         """

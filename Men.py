@@ -6,25 +6,24 @@ import Spell
 import math
 from math import copysign, fabs
 
-
 class Men():
     def __init__(self, name, group, cor, map_f, map_w, attack=1, skills=(1, 1, 1), spelllist = (), body=("Body_1.png", "Head_1.png"), gear=(None, None)):
         # Основные параметры персонажа
         self.name = name                        # Имя
-        self.group = group
+        self.group = group                      # ринадлежность к группе
         self.cor = cor                          # Координаты
         self.speed = 10                         # Скорость передвижения
         self.body = {                           # Изображения частей тела персонажей по умолчанию
             "head": Render_functions.load_image(body[1], alpha_cannel="True"),                  # Голова
             "body": Render_functions.load_image(body[0], alpha_cannel="True"),                  # Тело
         }
-        self.gear = {"Outerwear": None,                           # Снаряжение
-                     "Wearpon": None
+        self.gear = {"Outerwear": None,                             # Снаряжение
+                     "Wearpon": None                                # Оружие
                      }
         if gear[0]:
             self.gear["Outerwear"] = gear[0]    # Куртка\Костюм
         if gear[1]:
-            self.gear["Wearpon"] = gear[1]    # Оружие
+            self.gear["Wearpon"] = gear[1]      # Оружие
         self.skills = {                         # Навыки
             "magic":    skills[0],                                                     # Магия
             "strength": skills[1],                                                     # Сила
@@ -34,13 +33,12 @@ class Men():
         self.animations_update(body, gear)
         self.spells = spelllist                         # Заклинания
         self.effects = []                               # Эффекты, наложеные на персонажа
-        self.max_healf = self.skills["strength"]*10     # Максимальные очки здоровья
-        self.healf = self.skills["strength"]*10         # Текущие очки здоровья
+        self.max_health = self.skills["strength"]*10     # Максимальные очки здоровья
+        self.health = self.skills["strength"]*10         # Текущие очки здоровья
         self.max_manna = self.skills["magic"]*10        # Максимальные очки манны
         self.manna = self.skills["magic"]*10            # Текущие очки манны
         self.armor = 0                                  # Показатель брони
-        self.__update_armor
-        self.action_points = 0                         # Очки действий
+        self.action_points = 0                          # Очки действий
         self.dead = False                               # Мертв ли персонаж
     # Технические заморочки
         self.coofs = {                          # Коэффициенты (стоимость движения)
@@ -48,15 +46,15 @@ class Men():
             "stepwise_hand_to_hand": STEPWISE_HAND_TO_HAND                                  # Удар в рукопашную
         }
         self.path = ()                          # Путь, по которому идет персонаж
-        self.actoins = None
+        self.action = None
         self.rotate = 0                         # Угол, на который повернут персонаж
         self.move_progress = [0, 0]             # Помогает отобразить процесс перехода с одной клетки на другую
         self.anim_speed = 25                    # Скорость смены кадров в миллисекундах
-        self.anim_play = False
-        self.anim_stage = 0
+        self.anim_play = False                  # Код совершаемого действия
+        self.anim_stage = 0                     # Кадр анимации
         self.worktime = 0                       # Кол-во миллисекунд с последней смены кадра
         self.ren_img = None                     # Картинка, которая отображается на экране
-        self.ren_img = self.img_designer()
+        self.ren_img = self.img_designer()  # Начальное обновление картинки
         self.stepwise_mod = False               # Включает/Выключает пошаговый режим
         self.last_stop = None                   # Место, где персонажа в последний раз остановили методом stop
         self.attack_distance = attack           # Дальность, на которой можно атаковать (1 клетка по умолчанию)
@@ -70,13 +68,16 @@ class Men():
         self.map_w = map_w
         self.update_visionfield()
 
-    def update(self, dt, all_persons):
+    def update(self, time, all_persons):
         if self.dead:
             return
-        self.worktime += dt
+        self.worktime += time.dt
         if self.worktime < self.anim_speed:
             return
         self.worktime -= self.anim_speed
+        for effect in self.effects:
+            if effect.update(time):
+                self.effects.remove(effect)
         if self.path:
             for per in all_persons:
                 if not per.dead:
@@ -86,26 +87,26 @@ class Men():
                     elif self.path[0] == per.cor and self != per:
                         self.stop()
                         break
-        if self.path and not self.actoins:
+        if self.path and not self.action:
             if self.stepwise_mod and self.use_action_points(self.coofs['stepwise_move']):
-                self.actoins = ("m", self.path[0])
+                self.action = ("m", self.path[0])
             else:
-                self.actoins = ("m", self.path[0])
+                self.action = ("m", self.path[0])
             self.path = self.path[1:]
         elif self.target:
             self.attackfield_update()
-            self.hit()
+            self.hit(time)
         self.ren_img = self.img_designer()
         for w in self.whizbangs:
             w.update()
             if w.end:
                 self.whizbangs.remove(w)
-        if self.actoins:
-            if self.actoins[0] == "m":
-                self.move(self.actoins[1])
-                if self.actoins[1] == self.cor:
+        if self.action:
+            if self.action[0] == "m":
+                self.move(self.action[1])
+                if self.action[1] == self.cor:
                     self.update_visionfield()
-                    self.actoins = None
+                    self.action = None
 
     def update_visionfield(self):
         def app(lst, tile):
@@ -227,11 +228,12 @@ class Men():
         """
         self.stepwise_mod = not self.stepwise_mod
 
-    def hit(self):
+    def hit(self, time):
         """
                 Поворачивает персонажа в сторону цели и бьёт её
         """
         if not self.attack_field.collidepoint(self.target.cor[0], self.target.cor[1]) or self.target.cor not in self.vision_field:
+            self.target = None
             return
         if not self.look_direction(self.target.cor):
             return
@@ -243,7 +245,7 @@ class Men():
                     self.target = None
                     return
                 if self.use_action_points(self.gear["Wearpon"].action_points):
-                    self.gear["Wearpon"].apply(self, self.target, self.cor, self.whizbangs)
+                    self.gear["Wearpon"].apply(self, self.target, self.cor, self.whizbangs, time.get_time())
         else:
             if self.target == self:
                 self.target = None
@@ -277,16 +279,21 @@ class Men():
             damage -= self.armor
             if damage < 0:
                 damage = 0
-            self.healf -= damage
-        if self.healf <= 0:
-            self.healf = 0
+            self.health -= damage
+        if self.health <= 0:
+            self.health = 0
             self.kill_men()
 
     def kill_men(self):
         self.dead = True
 
-    def __update_armor(self):
-        self.armor = 0
+    def update_armor(self, value):
+        self.armor += value
+
+    def update_max_health(self, value):
+        k = self.health/self.max_health
+        self.max_health += value
+        self.health = int(self.max_health*k)
 
     def attackfield_update(self):
         """

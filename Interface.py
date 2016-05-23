@@ -176,12 +176,12 @@ class Interface():
                 for tile in npc.vision_field:
                     screen.blit(self.pathmarker, (coof[0]+tile[0]*100, coof[1]+tile[1]*100))
                 cor = npc.get_coords_on_map()[0] + self.camera.cor[0], npc.get_coords_on_map()[1] + self.camera.cor[1]
-                screen.blit(Render_functions.load_text(str(npc.healf), color=(200, 0, 0)), (cor[0]+5, cor[1]+5))
+                screen.blit(Render_functions.load_text(str(npc.health), color=(200, 0, 0)), (cor[0]+5, cor[1]+5))
                 screen.blit(Render_functions.load_text(str(npc.manna), color=(0, 0, 150)), (cor[0]+5, cor[1]+19))
                 screen.blit(Render_functions.load_text(str(npc.armor), color=(100, 100, 100)), (cor[0]+5, cor[1]+33))
             if self.character.dead:
                 screen.blit(Render_functions.load_text("Вы мертвы", pt=200, color=(220, 0, 0)), (80, self.resolution[1]/2-100))
-        screen.blit(Render_functions.load_text("Здоровье "+str(self.character.healf)+"|"+str(self.character.max_healf)), (self.resolution[0]-110, 5))
+        screen.blit(Render_functions.load_text("Здоровье "+str(self.character.health)+"|"+str(self.character.max_health)), (self.resolution[0]-110, 5))
         screen.blit(Render_functions.load_text("Манна "+str(self.character.manna)+"|"+str(self.character.max_manna)), (self.resolution[0]-110, 25))
         screen.blit(Render_functions.load_text("Броня "+str(self.character.armor)), (self.resolution[0]-110, 45))
         if self.buttons:

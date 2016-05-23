@@ -1,5 +1,5 @@
 import pygame
-import Tile
+from Tile import Floor, Wall
 from Thing import Example, Equipment
 from Character import Character
 from Camera import Camera
@@ -8,20 +8,22 @@ from Groups import groups
 from NPC import NPC
 import Render_functions
 import pickle
-from Buttons import  Button, Button_Img
+from Buttons import Button, Button_Img
 import Spell
+from Time import Time
 
 
 class GameProcess():
     def __init__(self, map_f, map_w):
-        self.items = {0: Example(doctor_robe), 1: Example(doctor_robe)}
-        self.items[0].update_slots(self.items[1],(0,0))
+        self.items = {0: Example(doctor_robe), 1: Example(doctor_robe)} # Все существующие экземпляры вещей
+        self.items[0].update_slots(self.items[1],(0,0)) # fixme! Временные меры по наполнению инвентарей
         self.character = Character("Test Character", groups["cher"], (2, 0), map_f, map_w, skills=(1, 3, 1), spelllist=(Spell.fireball, Spell.improve_aah), gear=(self.items[0], None))     # Создание игрового персонажа
         self.all_npc = [NPC("Test_Enemy", groups["enemy"], (1, 4), map_f, map_w, gear=(None, None)), NPC("Test_Enemy_2", groups["enemy"], (4, 2), map_f, map_w, gear=(None, None))]       # Ссылка на всех NPC
         self.all_persons = [self.character]
         self.all_persons.extend(self.all_npc)
-        self.camera = Camera([0,0], (len(map_f[0])*100, len(map_f)*100), (RES_X, RES_Y))
-        self.interface = Interface(self.character, self.all_npc, (RES_X, RES_Y), map_f, map_w, self.camera)
+        self.time = Time()                                                                      # Мировое время
+        self.camera = Camera([0,0], (len(map_f[0])*100, len(map_f)*100), (RES_X, RES_Y))        # Камера
+        self.interface = Interface(self.character, self.all_npc, (RES_X, RES_Y), map_f, map_w, self.camera) # Весь интерфейс
         self.interface.buttons.append(Button("Пошагово/Реальное время", (0, RES_Y-20), self.change_mod))
         self.interface.buttons.append(Button_Img(("Persona_icon.png","Persona_icon_2.png"), (RES_X-135, 7), self.interface.window_manager, arg=1))
         self.world_img = Render_functions.scene_render(map_f, map_w, objects, pygame.Surface((RES_X, RES_Y)))          # Поверхность, на которой отображается весь игровой мир
@@ -31,23 +33,26 @@ class GameProcess():
         self.camera.events(e)
 
     def update(self, dt):
+        if not self.character.stepwise_mod:
+            self.time.update(dt)
         self.interface.update()
         if self.character.stepwise_mod:
-            self.character.update(dt, self.all_persons)
+            self.character.update(self.time, self.all_persons)
             if self.character.action_points and not self.character.anim_play:
                 for npc in self.all_npc:
                     npc.action_points += self.character.action_points
+                self.time.update(self.character.action_points*1000)
                 self.character.action_points = 0
             for npc in self.all_npc:
                 # print("   Закончил -    ", npc.path, "  Тревога -  ", npc.alarm, "  ОД   ", npc.action_points, "Анимация - ", npc.anim_play)
-                npc.update(dt, map_f, map_w, self.get_objects_in_area(npc.vision_field), self.all_persons)
+                npc.update(self.time, map_f, map_w, self.get_objects_in_area(npc.vision_field), self.all_persons)
                 if not npc.finish:
                     break
         else:
-            self.character.update(dt, self.all_persons)
+            self.character.update(self.time, self.all_persons)
             for npc in self.all_npc:
                 npc.action_points = 0
-                npc.update(dt, map_f, map_w, self.get_objects_in_area(npc.vision_field), self.all_persons)
+                npc.update(self.time, map_f, map_w, self.get_objects_in_area(npc.vision_field), self.all_persons)
                 if self.character in npc.alarm:
                     self.on_stepwise_mod()
 
@@ -90,10 +95,9 @@ class GameProcess():
 
 def set_scene(scene_value):
     """
-    Уникальная нанофункция, сменяющая сцену. Благодаря моим глубочайшим познаниям в архитектуре языка выглядит так уродливо
+    Уникальная нанофункция, сменяющая сцену. Выглядит уродливо
     """
     scene_value[0][0] = scene_value[1]
-
 
 
 # Globals
@@ -116,18 +120,18 @@ mainloop = True                                     # Двигатель гла�
 
 objects = {     # Все доступные объекты
     "Floor": {
-        1: Tile.Floor((0, 0), "B_Tile.png", 1),
-        2: Tile.Floor((0, 0), "Tile-2.png", 2),
-        3: Tile.Floor((0, 0), "Ground_1.png", 3)
+        1: Floor((0, 0), "B_Tile.png", 1),
+        2: Floor((0, 0), "Tile-2.png", 2),
+        3: Floor((0, 0), "Ground_1.png", 3)
     },
     "Wall": {
-        1: Tile.Wall((0, 0), "Wall_1.png", 1)
+        1: Wall((0, 0), "Wall_1.png", 1)
     }
 }
 
 
-doctor_robe = Equipment("Врачебный халат", "White_doc_robe", (2, 2), 2, 1000, (5,5))
-bulletproof_vest = Equipment("Бронежилет", "Bulletproof_vest", (2, 2), 2, 1000, (3,3))
+doctor_robe = Equipment("Врачебный халат", "White_doc_robe", (2, 2), 2, 1000, (5, 5))
+bulletproof_vest = Equipment("Бронежилет", "Bulletproof_vest", (2, 2), 2, 1000, (3, 3))
 
 game_process = GameProcess(map_f, map_w)
 
