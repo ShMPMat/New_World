@@ -1,5 +1,6 @@
 import Render_functions
 from pygame import Rect
+from Effect import Effect
 
 class Thing():
     def __init__(self, name, spec_n, size, weight, cost, slot):
@@ -18,24 +19,48 @@ class Equipment(Thing):
         self.img = Render_functions.load_image(spec_n+img_suff, alpha_cannel="True")
         self.img_s =  Render_functions.load_image(spec_n+"_s"+img_suff, alpha_cannel="True")
 
+class UsableThing(Thing):
+    def __init__(self, name, spec_n, size, weight, cost, slot, effects, time, uses):
+        super().__init__(name, spec_n, size, weight, cost, slot)
+        self.effects = effects
+        self.time = time
+        self.uses = uses
+
+    def apply(self, target, start_time):
+        for type, value, range in self.effects:
+            target.effects.append(Effect(type, target, value, start_time, self.time, range))
+
 class Example():
     def __init__(self, type):
         self.type = type
-        if type.slots:
-            self.items = []
+        self.container = None
+        try:
+            if type.slots:
+                self.items = []
+        except: pass
+        try:
+            if type.uses:
+                self.uses = type.uses
+        except: pass
 
     def update_slots(self, thing, cor):
         if thing == self:
-            print(23)
             return False
         if cor[0]+thing.size[0] > self.slots[0] or cor[1]+thing.size[1] > self.slots[1]:
             return False
         r = Rect(cor, thing.size)
         for item in self.items:
-            if r.collidedict(item[1]):
+            if r.colliderect(item[1]):
                 return False
         self.items.append((thing, r))
+        thing.container = self
         return True
+
+    def remove(self, thing):
+        for item in self.items:
+            if item[0] == thing:
+                self.items.remove(item)
+                break
 
     def __getattr__(self, item): # fixme! I don't like it...
         if item == "name":
@@ -56,3 +81,6 @@ class Example():
             return self.type.img
         elif item == "img_s":
             return self.type.img_s
+        elif item == "apply":
+            self.uses -= 1
+            return self.type.apply

@@ -5,11 +5,14 @@ import Buttons
 import Render_functions
 import LoadSave
 import pickle
+from Interface import Window
+from NPC import NPC
 
 
 class EditableField():
     def __init__(self, width, height):
         self.map_f, self.map_w, self.map_d = self.matrix_creator(width, height)  # Карты тайлов и стен
+        self.NPCs = []
 
     def matrix_creator(self, width, height):
         """
@@ -97,7 +100,8 @@ class EditableField():
             file.close()
 
 class Interface():
-    def __init__(self, map, objects, map_size_buttons):
+    def __init__(self, map, objects, map_size_buttons, res):
+        self.map = map
         self.brush = 0                              # ID тайла, которым мы будем рисовать!
         self.buttons_floor = []                     # Кнопки, которыми меняются кисть тайлов
         x = 0
@@ -122,29 +126,67 @@ class Interface():
         self.map_size_buttons = map_size_buttons    # Кнопки, которыми меняется размер поля
         self.switch_buttons = []                    # Кнопки, переключающие меню
         self.saveload_buttons = []                  # Кнопки сохранения и загрузки
+        self.windows = [Window(pygame.Rect(res[0]-400,res[1]-400,400,400),"Background.png", [])]
+        self.active_windows = []
         self.section = "Floor"                      # Меню, которое находится в данный момент на экране
         self.grid = self.grid_creator(map)          # Сетка, которая накладывается на поле с тайлами
+        self.z_ind = False
+        self.fill = False
+        self.mid = False
 
     def events(self, e, map):
+        self.z_ind = False
         for but in self.switch_buttons:
             if but.events(e):
+                self.z_ind = True
                 self.buttons_up(but, self.switch_buttons)
                 self.set_brush(0)
         if self.section == "Floor":
             for but in self.buttons_floor:
                 if but.events(e):
+                    self.z_ind = True
                     self.buttons_up(but, self.buttons_floor)
         if self.section == "Wall":
             for but in self.buttons_wall:
                 if but.events(e):
+                    self.z_ind = True
                     self.buttons_up(but, self.buttons_wall)
         for but in self.map_size_buttons:
             if but.events(e):
+                self.z_ind = True
                 self.grid = self.grid_creator(map)
         for but in self.saveload_buttons:
             if but.events(e):
                 self.grid = self.grid_creator(map)
         self.grid = self.grid_creator(map) # fixme! Каждый чертов раз, когда рисуется новый кадр, мне приходится перерисовывать сетку!!!
+        if e.type == pygame.MOUSEBUTTONDOWN and e.button == 3:
+            self.fill = True
+        elif e.type == pygame.MOUSEBUTTONUP and e.button == 3:
+            self.fill = False
+        if e.type == pygame.MOUSEBUTTONDOWN and e.button == 2:
+            self.mid = True
+        elif e.type == pygame.MOUSEMOTION and self.mid:
+            self.mid = False
+        elif e.type == pygame.MOUSEBUTTONUP and e.button == 2 and self.mid:
+            self.active_windows.append(0)
+            self.mid = False
+        if not self.z_ind and e.type == pygame.MOUSEBUTTONUP and e.button == 1 or self.fill:
+            if interface.section == "Floor":
+                if Extra_functions.get_click_tile(e.pos, render_coof, field.map_f) != -1:
+                    field.map_f[Extra_functions.get_click_tile(e.pos, render_coof, field.map_f)[1]][Extra_functions.get_click_tile(e.pos, render_coof, field.map_f)[0]] = interface.brush
+            elif interface.section == "Wall":
+                if Extra_functions.get_click_tile(e.pos, render_coof, field.map_f) != -1:
+                    cor = Extra_functions.get_pixel_in_tile(e.pos, render_coof, field.map_f)
+                    if cor == -1:
+                        return
+                    if cor[1] >= 90:
+                        field.map_w[Extra_functions.get_click_tile(e.pos, render_coof, field.map_f)[1]][Extra_functions.get_click_tile(e.pos, render_coof, field.map_f)[0]][0] = interface.brush
+                    elif cor[0] <= 10:
+                        field.map_w[Extra_functions.get_click_tile(e.pos, render_coof, field.map_f)[1]][Extra_functions.get_click_tile(e.pos, render_coof, field.map_f)[0]][1] = interface.brush
+                    elif cor[1] <= 10:
+                        field.map_w[Extra_functions.get_click_tile(e.pos, render_coof, field.map_f)[1]][Extra_functions.get_click_tile(e.pos, render_coof, field.map_f)[0]][2] = interface.brush
+                    elif cor[0] >= 90:
+                        field.map_w[Extra_functions.get_click_tile(e.pos, render_coof, field.map_f)[1]][Extra_functions.get_click_tile(e.pos, render_coof, field.map_f)[0]][3] = interface.brush
 
     def buttons_up(self, but, lst):
         """
@@ -219,6 +261,8 @@ class Interface():
             but.render(screen)
         for but in self.saveload_buttons:
             but.render(screen)
+        for w in self.active_windows:
+            self.windows[w].render(screen)
 
 
 # Globals
@@ -252,7 +296,8 @@ interface = Interface(field.map_f, objects,            # Создаем инте
     (Buttons.Button_Img(("sel_but_3.png", "sel_but_3.png", "sel_but_3.png"), (RES_X-20, 70), field.matrix_new_line),
      Buttons.Button_Img(("sel_but_2.png", "sel_but_2.png", "sel_but_2.png"), (RES_X-20, 40), field.matrix_del_last_line),
      Buttons.Button_Img(("sel_but_1.png", "sel_but_1.png", "sel_but_1.png"), (RES_X-20, 10), field.matrix_new_column),
-     Buttons.Button_Img(("sel_but_4.png", "sel_but_4.png", "sel_but_4.png"), (RES_X-50, 10), field.matrix_del_last_column)))
+     Buttons.Button_Img(("sel_but_4.png", "sel_but_4.png", "sel_but_4.png"), (RES_X-50, 10), field.matrix_del_last_column)),
+                      (RES_X,RES_Y))
 
 interface.switch_buttons.append(Buttons.Button_Flag(objects["Floor"][1].image, interface.set_section, (0, 0), arg=("Floor", "Floor"), size=(25,25)))
 interface.switch_buttons.append(Buttons.Button_Flag(objects["Wall"][1].image, interface.set_section, (25, 0), arg=("Wall", "Wall"), size=(25, 25)))
@@ -273,21 +318,6 @@ while mainloop:
                 if e.button == 2:
                     ch = True
             if e.type == pygame.MOUSEBUTTONUP:
-                if e.button == 1:
-                    if interface.section == "Floor":
-                        if Extra_functions.get_click_tile(e.pos, render_coof, field.map_f) != -1:
-                            field.map_f[Extra_functions.get_click_tile(e.pos, render_coof, field.map_f)[1]][Extra_functions.get_click_tile(e.pos, render_coof, field.map_f)[0]] = interface.brush
-                    elif interface.section == "Wall":
-                        if Extra_functions.get_click_tile(e.pos, render_coof, field.map_f) != -1:
-                            cor = Extra_functions.get_pixel_in_tile(e.pos, render_coof, field.map_f)
-                            if cor[1] >= 90:
-                                field.map_w[Extra_functions.get_click_tile(e.pos, render_coof, field.map_f)[1]][Extra_functions.get_click_tile(e.pos, render_coof, field.map_f)[0]][0] = interface.brush
-                            elif cor[0] <= 10:
-                                field.map_w[Extra_functions.get_click_tile(e.pos, render_coof, field.map_f)[1]][Extra_functions.get_click_tile(e.pos, render_coof, field.map_f)[0]][1] = interface.brush
-                            elif cor[1] <= 10:
-                                field.map_w[Extra_functions.get_click_tile(e.pos, render_coof, field.map_f)[1]][Extra_functions.get_click_tile(e.pos, render_coof, field.map_f)[0]][2] = interface.brush
-                            elif cor[0] >= 90:
-                                field.map_w[Extra_functions.get_click_tile(e.pos, render_coof, field.map_f)[1]][Extra_functions.get_click_tile(e.pos, render_coof, field.map_f)[0]][3] = interface.brush
                 if e.button == 2:
                     ch = False
             if e.type == pygame.MOUSEMOTION:

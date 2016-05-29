@@ -3,7 +3,7 @@ import Buttons
 import Extra_functions
 import pygame
 import Spell
-import Thing
+from Thing import UsableThing
 from findPathLee import findPath
 
 class Interface():
@@ -38,8 +38,13 @@ class Interface():
         self.des = None
         self.inventory_cor = (30, 100)           # Координаты первого окна инвентаря
         self.inventory_cors_count = []
-        self.windows = [Window(pygame.Rect(0,0,res[0]/2,res[1]-20),"Background.png", [])
-                        ]
+        self.windows = [Window(pygame.Rect(0,0,res[0]/2,res[1]-20),"Background.png", [])]
+        self.windows[0].elements["static"] = [
+                                    (Render_functions.load_text(str(self.character.name)), (65, self.resolution[1]-40)),
+                                    (Render_functions.load_image('Outerwear_s.png', alpha_cannel="True"), (330,200)),
+                                    (Render_functions.load_image('W_s.png', alpha_cannel="True"), (390,180)),
+                                    (Render_functions.load_image('W_s.png', alpha_cannel="True"), (290,180))]
+        self.windows[0].elements["inventor"] = []
         self.update_persona_window()
         self.active_windows = []                # Окна, которые в данный момент отображаются на экране
         x = self.resolution[0]-170
@@ -62,14 +67,13 @@ class Interface():
                 self.map_pass[n.cor[1]][n.cor[0]] = 0
 
     def update_persona_window(self):
-        self.windows[0].elements = {"static": [(Render_functions.load_text("Сила -          "+str(self.character.skills["strength"])), (5, 5)),
+        self.windows[0].elements["static"] = self.windows[0].elements["static"][:4]
+        self.windows[0].elements["static"].extend((
+                                    (Render_functions.load_text("Сила -          "+str(self.character.skills["strength"])), (5, 5)),
                                     (Render_functions.load_text("Магия -        "+str(self.character.skills["magic"])), (5, 25)),
-                                    (Render_functions.load_text("Стрельба -   "+str(self.character.skills["shooting"])), (5, 45)),
-                                    (Render_functions.load_text(str(self.character.name)), (65, self.resolution[1]-40)),
-                                    (Render_functions.load_image('Outerwear_s.png', alpha_cannel="True"), (330,200)),
-                                    (Render_functions.load_image('W_s.png', alpha_cannel="True"), (390,180)),
-                                    (Render_functions.load_image('W_s.png', alpha_cannel="True"), (290,180))],
-                                     "active": []}
+                                    (Render_functions.load_text("Стрельба -   "+str(self.character.skills["shooting"])), (5, 45))))
+        self.windows[0].elements["active"] = []
+        self.windows[0].elements["inventor"] = []
         if self.character.gear["Outerwear"]:                # Проверка на наличие слотов инвентаря и их графическая отрисовка
             cor = list(self.inventory_cor)
             self.inventory_count = 0
@@ -77,7 +81,7 @@ class Interface():
             cor[1] += self.windows[0].elements["active"][-1][0].get_height() + 10
             self.inventory_cors_count.append((tuple(cor),self.character.gear["Outerwear"]))
             for j, c in self.character.gear["Outerwear"].items:
-                self.windows[0].elements["active"].append((j.icon, (self.inventory_cor[0]+c.x*20,self.inventory_cor[1]+c.y*20)))
+                self.windows[0].elements["inventor"].append((j, pygame.Rect(self.inventory_cor[0]+c.x*20,self.inventory_cor[1]+c.y*20, c.width*20, c.height*20)))
             self.windows[0].elements["active"].append((self.character.gear["Outerwear"].img_s, (330, 200)))
             if self.des:
                 for el, cor in self.windows[0].elements["active"]:
@@ -86,7 +90,7 @@ class Interface():
         if self.cursor:
             self.windows[0].elements["active"].append((self.cursor[0].icon, self.cursor[1]))
 
-    def events(self, e):
+    def events(self, e, time):
         self.z_ind = False
         for n in self.active_windows:
             if self.windows[n].rect.collidepoint(e.pos):
@@ -132,6 +136,10 @@ class Interface():
                 self.cursor = None
         if not 0 in self.active_windows:
             return
+        if e.type == pygame.MOUSEBUTTONUP and e.button == 3:
+            for sur, cor in self.windows[0].elements["inventor"]:
+                if type(sur.type) == UsableThing and cor.collidepoint(e.pos):
+                    sur.apply(self.character, time.get_time())
         if self.character.gear["Outerwear"]:
             for el, cor in self.windows[0].elements["active"]:
                 if el != self.character.gear["Outerwear"].img_s:
@@ -201,13 +209,22 @@ class Interface():
         if self.active_windows:
             for n in self.active_windows:
                 self.windows[n].render(screen)
+                if n == 0:
+                    for sur, cor in self.windows[0].elements["inventor"]:
+                        screen.blit(sur.icon, (cor.x, cor.y))
 
 
 class Window():
     def __init__(self, rect, background, elements):
         self.rect = rect
         self.background = Render_functions.tiled_background(background, self.rect.width, self.rect.height)
-        self.elements = elements
+        if elements:
+            self.elements = elements
+        else:
+            self.elements = {
+                "static": [],
+                "active": []
+            }
 
     def render(self, screen):
         screen.blit(self.background, self.rect.topleft)

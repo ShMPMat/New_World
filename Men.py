@@ -2,7 +2,7 @@ import pygame
 import Render_functions
 from coefficients import *
 import random
-import Spell
+from Spell import Spell
 import math
 from math import copysign, fabs
 
@@ -10,7 +10,7 @@ class Men():
     def __init__(self, name, group, cor, map_f, map_w, attack=1, skills=(1, 1, 1), spelllist = (), body=("Body_1.png", "Head_1.png"), gear=(None, None)):
         # Основные параметры персонажа
         self.name = name                        # Имя
-        self.group = group                      # ринадлежность к группе
+        self.group = group                      # Принадлежность к группе
         self.cor = cor                          # Координаты
         self.speed = 10                         # Скорость передвижения
         self.body = {                           # Изображения частей тела персонажей по умолчанию
@@ -78,21 +78,23 @@ class Men():
         for effect in self.effects:
             if effect.update(time):
                 self.effects.remove(effect)
-        if self.path:
-            for per in all_persons:
-                if not per.dead:
-                    if self.path == per.cor and self != per:
-                        self.stop()
-                        break
-                    elif self.path[0] == per.cor and self != per:
-                        self.stop()
-                        break
         if self.path and not self.action:
-            if self.stepwise_mod and self.use_action_points(self.coofs['stepwise_move']):
+            if self.stepwise_mod and self.use_action_points(self.coofs['stepwise_move']) or not self.stepwise_mod:
                 self.action = ("m", self.path[0])
+                self.path = self.path[1:]
+                for per in all_persons:
+                    if  per.dead or per == self:
+                        continue
+                    if self.action == per.action:
+                        if self.skills["strength"] > per.skills["strength"]:
+                            per.stop()
+                        else:
+                            self.stop()
+                        break
+                    elif self.action[1] == per.cor:
+                        self.stop()
             else:
-                self.action = ("m", self.path[0])
-            self.path = self.path[1:]
+                self.action = ()
         elif self.target:
             self.attackfield_update()
             self.hit(time)
@@ -135,7 +137,7 @@ class Men():
                         else:
                             unseen.append((x+int(copysign(1, y-self.cor[1])), y-1))
                             unseen.append((x+int(copysign(1, y-self.cor[1])), y+1))
-                    unseen_list.remove((x,y))
+                    unseen_list.remove((x, y))
             if unseen:
                 for tile in unseen:
                     app(unseen_list, tile)
@@ -177,8 +179,7 @@ class Men():
                     elif not (x, y-1) in past_list and not (x, y-1) in unseen_list:
                         sub.append((x, y-1))
                     past_list.append((x, y))
-                    actual_list.remove((x, y))
-            actual_list.extend(sub)
+            actual_list = sub.copy()
             sub.clear()
         self.vision_field = vision_list
 
@@ -213,14 +214,15 @@ class Men():
                 self.attackfield_update()
                 self.anim_play = False
 
-    def stop(self):
+    def stop(self): # fixme! Застревание в NPC!!!!!!!!
         """
                 Остановить персонажа
         """
-        if self.path != self.last_stop:
-            if self.path:
-                self.last_stop = self.path[0]
+        if self.action[0] == "m":
+            self.last_stop = self.action[1]
             self.path = None
+            if self.move_progress[0] == 0 and self.move_progress[1] == 0:
+                self.action = ()
 
     def change_mod(self):
         """
@@ -240,7 +242,7 @@ class Men():
         if self.anim_play == "b_punch":
             return
         if self.gear["Wearpon"]:
-            if type(self.gear["Wearpon"]) == Spell.Spell:
+            if type(self.gear["Wearpon"]) == Spell:
                 if self.target == self and self.gear["Wearpon"].type != "Defence":
                     self.target = None
                     return
@@ -294,6 +296,11 @@ class Men():
         k = self.health/self.max_health
         self.max_health += value
         self.health = int(self.max_health*k)
+
+    def heal(self, value):
+        self.health += value
+        if self.health > self.max_health:
+            self.health = self.max_health
 
     def attackfield_update(self):
         """

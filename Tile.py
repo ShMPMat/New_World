@@ -18,7 +18,7 @@ class Floor(Tile):
         self.image = Render_functions.load_image(img, alpha_cannel=True)
 
     def render(self, screen, x, y):
-        screen.blit(self.image, (x*100, y*100))
+        screen.blit(self.image, (x, y))
 
 
 class Wall(Tile):
@@ -41,4 +41,4 @@ class Wall(Tile):
             self.render_image = self.image
 
     def render(self, screen):
-        screen.blit(self.render_image, (self.cor[0]*100, self.cor[1]*100))
+        screen.blit(self.render_image, (self.cor[0], self.cor[1]))

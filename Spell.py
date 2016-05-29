@@ -1,4 +1,5 @@
 from Whizbang import Whizbang
+from Effect import Effect
 
 class Spell():
     def __init__(self, name, type, manna_cost, ap_cost, distance, time, effect=None):
@@ -24,35 +25,7 @@ class Spell():
         if self.type == "Attacking":
             lst.append(Whizbang(cor, target.cor, self.whizbang))
         for type, value, range in self.effects:
-            if type == "hurt":
-                target.effects.append(Effect(target.hurt, value, start_time, self.time, range))
-            elif type == "armor":
-                target.effects.append(Effect(target.update_armor, value, start_time, self.time, range))
-            elif type == "health":
-                target.effects.append(Effect(target.update_max_health, value, start_time, self.time, range))
-
-class Effect():
-    def __init__(self, type, value, start, time, range):
-        self.type = type
-        self.value = value
-        self.start = start
-        self.time = time
-        self.range = range
-        self.sw = True
-
-    def update(self, time):
-        if self.range == "instant":
-            self.type(self.value)
-            return True
-        elif self.range == "cont":
-            if self.sw:
-                self.type(self.value)
-                self.sw = False
-            elif time.get_delta_time(self.start[0], self.start[1]) >= self.time:
-                self.type(-self.value)
-                return True
-        else:
-            pass
+            target.effects.append(Effect(type, target, value, start_time, self.time, range))
 
 
 fireball = Spell("Огненный шар", "Attacking", 1, 4, 4, 1, effect=(("hurt", 3, "instant"), "Flying_fireball.png"))

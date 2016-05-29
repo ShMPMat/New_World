@@ -40,15 +40,21 @@ def tiled_background(img, res_x, res_y):
             y += size
 
 
-def scene_render(map_f, map_w, objects, sur):
+def scene_render(map_f, map_w, objects, sur, cam, coof = 100):
+    """
+    for y in range(cam.cor[1]*-1//100,(cam.res[1]+cam.cor[1]*-1)//100+1):
+        for x in range(cam.cor[0]*-1//100,(cam.res[1]+cam.cor[0]*-1)//100+1):
+            if map_f[y][x]:
+                objects["Floor"][map_f[y][x]].render(sur, x*coof, y*coof)
+    """
     y = 0
     for line in map_f:
         x = 0
         for tile in line:
             if tile:
                 objects["Floor"][tile].render(sur, x, y)
-            x += 1
-        y += 1
+            x += coof
+        y += coof
     y = 0
     for line in map_w:
         x = 0
@@ -73,7 +79,7 @@ def scene_render(map_f, map_w, objects, sur):
                         objects["Wall"][dir].set_rotate("R")
                         objects["Wall"][dir].render(sur)
                 z += 1
-            x += 1
-        y += 1
-    sur = pygame.transform.scale(sur, (100*len(map_f[0]), 100*len(map_f)))
+            x += coof
+        y += coof
+    sur = pygame.transform.scale(sur, (coof*len(map_f[0]), coof*len(map_f)))
     return sur
