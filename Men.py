@@ -1,10 +1,10 @@
 import pygame
+import random
 import Render_functions
 from coefficients import *
-import random
 from Spell import Spell
-import math
-from math import copysign, fabs
+from math import copysign, fabs, sqrt, acos
+from Effect import Effect
 
 class Men():
     def __init__(self, name, group, cor, map_f, map_w, attack=1, skills=(1, 1, 1), spelllist = (), body=("Body_1.png", "Head_1.png"), gear=(None, None)):
@@ -17,19 +17,23 @@ class Men():
             "head": Render_functions.load_image(body[1], alpha_cannel="True"),                  # Голова
             "body": Render_functions.load_image(body[0], alpha_cannel="True"),                  # Тело
         }
-        self.gear = {"Outerwear": None,                             # Снаряжение
-                     "Wearpon": None                                # Оружие
+        self.gear = {"Outerwear": None,                             # Верхняя одежда
+                     "Hands": None,                                # Оружие
+                     "Left_shoulder": None,
+                     "Right_shoulder": None
                      }
         if gear[0]:
             self.gear["Outerwear"] = gear[0]    # Куртка\Костюм
         if gear[1]:
-            self.gear["Wearpon"] = gear[1]      # Оружие
+            self.gear["Hands"] = gear[1]      # Оружие
         self.skills = {                         # Навыки
             "magic":    skills[0],                                                     # Магия
             "strength": skills[1],                                                     # Сила
             "shooting": skills[2]                                                      # Стрельба
         }
+        self.relations = {}
         self.animations = {}
+        self.dialogue = None
         self.animations_update(body, gear)
         self.spells = spelllist                         # Заклинания
         self.effects = []                               # Эффекты, наложеные на персонажа
@@ -54,7 +58,7 @@ class Men():
         self.anim_stage = 0                     # Кадр анимации
         self.worktime = 0                       # Кол-во миллисекунд с последней смены кадра
         self.ren_img = None                     # Картинка, которая отображается на экране
-        self.ren_img = self.img_designer()  # Начальное обновление картинки
+        self.ren_img = self.img_designer()      # Начальное обновление картинки
         self.stepwise_mod = False               # Включает/Выключает пошаговый режим
         self.last_stop = None                   # Место, где персонажа в последний раз остановили методом stop
         self.attack_distance = attack           # Дальность, на которой можно атаковать (1 клетка по умолчанию)
@@ -214,7 +218,7 @@ class Men():
                 self.attackfield_update()
                 self.anim_play = False
 
-    def stop(self): # fixme! Застревание в NPC!!!!!!!!
+    def stop(self):
         """
                 Остановить персонажа
         """
@@ -241,29 +245,24 @@ class Men():
             return
         if self.anim_play == "b_punch":
             return
-        if self.gear["Wearpon"]:
-            if type(self.gear["Wearpon"]) == Spell:
-                if self.target == self and self.gear["Wearpon"].type != "Defence":
+        if self.gear["Hands"]:
+            if type(self.gear["Hands"]) == Spell:
+                if self.target == self and self.gear["Hands"].type != "Defence":
                     self.target = None
                     return
-                if self.use_action_points(self.gear["Wearpon"].action_points):
-                    self.gear["Wearpon"].apply(self, self.target, self.cor, self.whizbangs, time.get_time())
-        else:
-            if self.target == self:
-                self.target = None
-                return
-            damage = self.skills["strength"]
-            cost = self.coofs["stepwise_hand_to_hand"]
-            if self.use_action_points(cost):
-                self.target.hurt(damage)
+                if self.use_action_points(self.gear["Hands"].action_points):
+                    self.gear["Hands"].apply(self, self.target, self.cor, self.whizbangs, time.get_time())
+        elif self.target != self:
+            if self.use_action_points(self.coofs["stepwise_hand_to_hand"]):
+                self.target.effects.append(Effect("hurt", self.target, self.skills["strength"], time.get_time(), time, "instant"))
                 self.anim_play = "b_punch"
         self.target = None
 
-    def set_wearpon(self, weapon):
+    def set_hands(self, weapon):
         """
                 Смена оружия на новое (или приготовить кулаки, если его нет)
         """
-        self.gear["Wearpon"] = weapon
+        self.gear["Hands"] = weapon
         if weapon:
             self.attack_distance = weapon.distance
         else:
@@ -272,6 +271,10 @@ class Men():
 
     def set_target(self, target):
         self.target = target
+
+    def apply_thing(self, thing, target, time):
+        if self.stepwise_mod and self.use_action_points(thing.action_points):
+            thing.apply(target, time) # fixme! Ты знаешь, что
 
     def hurt(self, damage):
         """
@@ -325,7 +328,7 @@ class Men():
         x2 = 0
         y2 = -1
         try:
-            a = int(math.acos((x1*x2+y1*y2)/(math.sqrt(x1**2+y1**2)*math.sqrt(x2**2+y2**2)))*180/3.14)
+            a = int(acos((x1*x2+y1*y2)/(sqrt(x1**2+y1**2)*sqrt(x2**2+y2**2)))*180/3.14)
             self.angle = a
         except:
             a = self.angle

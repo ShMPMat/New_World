@@ -5,11 +5,11 @@ class Group():
         self.ID = ID
 
 groups = {
-"cher" : Group("Character", 0),
+"Alfa_c" : Group("Character", 0),
 "enemy" : Group("Abstract Enemy", 1)
 }
 relations_list = [
-#   Char enemy
-    [0,   0], # Char
-    [-1, -1]  # Enemy
+#   Alfa_C  enemy
+    [0,      0], # Alfa_C
+    [-1,    -1]  # Enemy
 ]

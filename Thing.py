@@ -12,21 +12,33 @@ class Thing():
         self.slots = slot
 
 class Equipment(Thing):
-    def __init__(self, name, spec_n, size, weight, cost, slot):
+    def __init__(self, name, spec_n, size, weight, cost, slot, type):
         super().__init__(name, spec_n, size, weight, cost, slot)
         img_suff = '.png'
         self.spec_n = spec_n
         self.img = Render_functions.load_image(spec_n+img_suff, alpha_cannel="True")
         self.img_s =  Render_functions.load_image(spec_n+"_s"+img_suff, alpha_cannel="True")
+        self.type = type
+
+class Weapon(Thing):
+    def __init__(self, name, spec_n, size, weight, cost, type):
+        super().__init__(name, spec_n, size, weight, cost, None)
+        img_suff = '.png'
+        self.spec_n = spec_n
+        self.img = Render_functions.load_image(spec_n+img_suff, alpha_cannel="True")
+        self.img_s =  Render_functions.load_image(spec_n+"_s"+img_suff, alpha_cannel="True")
+        self.type = type
 
 class UsableThing(Thing):
-    def __init__(self, name, spec_n, size, weight, cost, slot, effects, time, uses):
+    def __init__(self, name, spec_n, size, weight, cost, slot, effects, time, uses, action_points):
         super().__init__(name, spec_n, size, weight, cost, slot)
         self.effects = effects
         self.time = time
         self.uses = uses
+        self.action_points = action_points
 
     def apply(self, target, start_time):
+        print("1111111111")
         for type, value, range in self.effects:
             target.effects.append(Effect(type, target, value, start_time, self.time, range))
 
@@ -84,3 +96,5 @@ class Example():
         elif item == "apply":
             self.uses -= 1
             return self.type.apply
+        elif item == "action_points":
+            return self.type.action_points

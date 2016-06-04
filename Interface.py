@@ -51,7 +51,7 @@ class Interface():
         y = 100
         if type(self.character.spells) == tuple:
             for spell in self.character.spells:
-                self.stepwise_buttons.append(Buttons.Button_Flag(Render_functions.load_text(spell.name), self.character.set_wearpon, (x, y), arg=(spell, None)))
+                self.stepwise_buttons.append(Buttons.Button_Flag(Render_functions.load_text(spell.name), self.character.set_hands, (x, y), arg=(spell, None)))
                 y += 15
         else:
             self.stepwise_buttons.append(Buttons.Button_Flag(Render_functions.load_text(self.character.spells.name), char.set_wearpon, (x, y), arg=(self.character.spells, None)))
@@ -104,7 +104,7 @@ class Interface():
                 if but.events(e):
                     self.z_ind = True
                     self.buttons_up(but, self.stepwise_buttons)
-            if e.type == pygame.MOUSEMOTION:
+            if self.character.stepwise_mod and e.type == pygame.MOUSEMOTION:
                 self.path = findPath(self.map_pass, self.map_w, self.character.cor, (Extra_functions.get_click_tile(e.pos, self.camera.cor, self.map_pass)))
                 if self.path == -1:
                     self.path = None
@@ -139,7 +139,7 @@ class Interface():
         if e.type == pygame.MOUSEBUTTONUP and e.button == 3:
             for sur, cor in self.windows[0].elements["inventor"]:
                 if type(sur.type) == UsableThing and cor.collidepoint(e.pos):
-                    sur.apply(self.character, time.get_time())
+                    self.character.apply_thing(sur, self.character, time.get_time())
         if self.character.gear["Outerwear"]:
             for el, cor in self.windows[0].elements["active"]:
                 if el != self.character.gear["Outerwear"].img_s:
@@ -178,8 +178,6 @@ class Interface():
             if self.path:
                 for tile in self.path:
                     screen.blit(self.pathmarker, (coof[0]+tile[0]*100, coof[1]+tile[1]*100))
-            # for tile in self.character.vision_field:
-            #         screen.blit(self.pathmarker, (coof[0]+tile[0]*100, coof[1]+tile[1]*100))
             for npc in self.npc_list:
                 for tile in npc.vision_field:
                     screen.blit(self.pathmarker, (coof[0]+tile[0]*100, coof[1]+tile[1]*100))
@@ -197,7 +195,7 @@ class Interface():
                 but.render(screen)
         x = self.resolution[0] - 45
         y = self.resolution[1] - 45
-        w = self.character.gear["Wearpon"]
+        w = self.character.gear["Hands"]
         if w:
             if type(w) == Spell.Spell:
                 if w.type == "Attacking":

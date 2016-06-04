@@ -22,8 +22,9 @@ class NPC(Men):
                 Интеллект NPC. Он может:
                     1.
         """
+        self.others_actions = []
         for object in viev_objects:
-            if relations_list[self.group.ID][object.group.ID] < 0 and object != self and not object.dead:
+            if self.get_relations(object) < 0:
                 if not object.dead:
                     if not object in self.alarm:
                         if not self.alarm:
@@ -39,6 +40,17 @@ class NPC(Men):
             if self.attack_field.collidepoint(object.cor[0], object.cor[1]):
                 self.path = None
                 self.set_target(object)
+
+    def get_relations(self, object):
+        if object == self or object.dead:
+            return 0
+        relation = relations_list[self.group.ID][object.group.ID]
+        try:
+            for action, value in self.relations[object]:
+                relation += value
+        except: pass
+        return relation
+
 
     def kill_men(self):
         super().kill_men()
