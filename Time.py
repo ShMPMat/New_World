@@ -14,8 +14,8 @@ class Time():
         self.minutes += self.second//60
         self.second %= 60
 
-    def get_delta_time(self, seconds, minutes):
-        return (self.minutes-minutes)*60 + self.second-seconds
+    def get_delta_time(self, seconds, minutes, miliseconds):
+        return (self.minutes-minutes)*60 + self.second-seconds + (self.miliseconds - miliseconds)/1000
 
     def get_time(self):
-        return self.second, self.minutes
+        return self.second, self.minutes, self.miliseconds

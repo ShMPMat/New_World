@@ -19,9 +19,6 @@ class Spell():
         if exorcist.manna - self.manna < 0:
             return
         exorcist.manna -= self.manna
-        start_time = list(start_time)
-        start_time[0]+=self.action_points
-        start_time = tuple(start_time)
         if self.type == "Attacking":
             lst.append(Whizbang(cor, target.cor, self.whizbang))
         for type, value, range in self.effects:

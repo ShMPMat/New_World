@@ -15,15 +15,15 @@ from Time import Time
 
 class GameProcess():
     def __init__(self, map_f, map_w):
+        self.time = Time()
         self.items = {0: Example(doctor_robe), 1: Example(doctor_robe), 2: Example(bulletproof_vest)} # Все существующие экземпляры вещей
         self.usable_items = {0: Example(biogel)}
         self.items[0].update_slots(self.items[1],(0,0)) # fixme! Временные меры по наполнению инвентарей
         self.items[0].update_slots(self.usable_items[0],(0,2))
-        self.character = Character("Test Character", groups["Alfa_c"], (2, 0), map_f, map_w, skills=(1, 3, 1), spelllist=(Spell.fireball, Spell.improve_aah), gear=(self.items[0], None))     # Создание игрового персонажа
-        self.all_npc = [NPC("Test_Enemy", groups["enemy"], (3, 2), map_f, map_w, gear=(None, None)), NPC("Test_Enemy_2", groups["enemy"], (4, 2), map_f, map_w, gear=(None, None)), NPC("Test_Enemy_2", groups["Alfa_c"], (0, 1), map_f, map_w, gear=(self.items[2], None))]       # Ссылка на всех NPC
+        self.character = Character("TestCharacter", groups["Alfa_c"], (2, 0), map_f, map_w, self.time, skills=(1, 3, 1), spelllist=(Spell.fireball, Spell.improve_aah), gear=(self.items[0], None))     # Создание игрового персонажа
+        self.all_npc = [NPC("Test_Enemy", groups["enemy"], (2, 2), map_f, map_w, self.time), NPC("Test_Enemy_2", groups["enemy"], (4, 2), map_f, map_w, self.time), NPC("Test", groups["Alfa_c"], (0, 1), map_f, map_w, self.time, gear=(self.items[2], None))]       # Ссылка на всех NPC
         self.all_persons = [self.character]
-        self.all_persons.extend(self.all_npc)
-        self.time = Time()                                                                      # Мировое время
+        self.all_persons.extend(self.all_npc)                                              # Мировое время
         self.camera = Camera([0,0], (len(map_f[0])*100, len(map_f)*100), (RES_X, RES_Y))        # Камера
         self.interface = Interface(self.character, self.all_npc, (RES_X, RES_Y), map_f, map_w, self.camera) # Весь интерфейс
         self.interface.buttons.append(Button("Пошагово/Реальное время", (0, RES_Y-20), self.change_mod))
@@ -35,51 +35,38 @@ class GameProcess():
         self.camera.events(e)
 
     def update(self, dt):
-        if not self.character.stepwise_mod:
+        if self.character.stepwise_mod:
+            if self.character.cur_anim:
+                self.time.update(dt)
+            else:
+                self.time.dt = 0
+        else:
             self.time.update(dt)
         self.interface.update()
         for i in self.usable_items.keys():
             if self.usable_items[i].uses == 0:
                 self.usable_items[i].container.remove(self.usable_items.pop(i))
                 break
-        if self.character.stepwise_mod:
-            self.character.update(self.time, self.all_persons)
-            if self.character.action_points:
-                for npc in self.all_npc:
-                    npc.action_points += self.character.action_points
-                self.time.update(self.character.action_points*1000)
-                self.character.action_points = 0
-            for npc in self.all_npc:
-                # print("   Закончил -    ", npc.path, "  ОД   ", npc.action_points, "Анимация - ", npc.anim_play)
-                npc.update(self.time, map_f, map_w, self.get_objects_in_area(npc.vision_field), self.all_persons)
-        else:
-            self.character.update(self.time, self.all_persons)
-            for npc in self.all_npc:
-                npc.action_points = 0
-                npc.update(self.time, map_f, map_w, self.get_objects_in_area(npc.vision_field), self.all_persons)
-                if self.character in npc.alarm:
-                    self.on_stepwise_mod()
+        self.character.update(self.all_persons)
+        for npc in self.all_npc:
+            npc.update(map_f, map_w, self.get_objects_in_area(npc.vision_field), self.all_persons)
+            if not self.character.stepwise_mod and self.character in npc.alarm:
+                self.on_stepwise_mod()
 
     def on_stepwise_mod(self):
         """
                 Включить пошаговый режим для всех
         """
-        for men in self.all_persons:
-            men.stepwise_mod = True
+        self.character.stepwise_mod = True
 
     def change_mod(self):
         """
                 Сменить режим с пошагового на нормальный или обратно
         """
         for npc in self.all_npc:
-            if npc.alarm:
+            if self.character in npc.alarm: #fixme! Не выходит!
                 return
         self.character.change_mod()
-        try:
-            for npc in self.all_npc:
-                npc.change_mod()
-        except:
-            self.all_npc.change_mod()
 
     def get_objects_in_area(self, area):
         objects = []

@@ -23,7 +23,7 @@ class Effect():
             if self.sw:
                 self.type(self.value)
                 self.sw = False
-            elif time.get_delta_time(self.start[0], self.start[1]) >= self.time:
+            elif time.get_delta_time(self.start[0], self.start[1], self.start[2]) >= self.time:
                 self.type(-self.value)
                 return True
         else:
